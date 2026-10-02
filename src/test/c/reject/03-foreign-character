@@ -1,0 +1,4 @@
+// Spec reject (III): an input character outside the alphabet (`$`).
+drone $Scout {
+  endurance 20 [min];
+}

@@ -1,0 +1,6 @@
+// Maneuvers must live inside a mission body; placing them at the top level
+// is a syntax error.
+drone Scout { endurance 20 [min]; max_speed 10 [m/s]; }
+fleet Alpha = 2 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+Alpha takeoff from Base at 0 [s];

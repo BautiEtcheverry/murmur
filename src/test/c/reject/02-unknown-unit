@@ -1,0 +1,4 @@
+// Spec reject (II): a unit the language does not recognise.
+drone Scout {
+  endurance 28 [weeks];
+}

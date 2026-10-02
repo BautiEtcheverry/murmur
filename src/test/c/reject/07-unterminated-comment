@@ -1,0 +1,4 @@
+/* An unterminated multi-line comment that never finds its closing marker,
+drone Scout {
+  endurance 20 [min];
+}

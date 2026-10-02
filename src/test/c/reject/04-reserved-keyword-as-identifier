@@ -1,0 +1,5 @@
+// Spec reject (IV): using the reserved keyword `fleet` where an identifier
+// is required.
+drone fleet {
+  endurance 20 [min];
+}

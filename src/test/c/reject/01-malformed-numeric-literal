@@ -1,0 +1,4 @@
+// Spec reject (I): a malformed numeric literal (two decimal points).
+drone Scout {
+  endurance 12.3.4 [min];
+}

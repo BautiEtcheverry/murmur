@@ -1,0 +1,5 @@
+// Spec reject (V): a physical magnitude declared without its unit.
+drone Scout {
+  endurance 28;
+  max_speed 18 [m/s];
+}
