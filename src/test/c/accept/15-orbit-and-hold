@@ -1,0 +1,11 @@
+// Spec test (XV): orbit around a point of interest plus a hover hold.
+drone Thermal { endurance 40 [min]; max_speed 12 [m/s]; }
+fleet Alpha = 2 of Thermal;
+zone LKP = circle at (200, 180) radius 10 [m];
+station Base = point (0, 0) altitude 0 [m];
+mission OrbitHold window 0 [s] .. 700 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha orbit LKP radius 70 [m] altitude 90 [m] for 300 [s];
+  Alpha hold for 45 [s];
+  Alpha land at Base at 680 [s];
+}

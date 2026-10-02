@@ -1,0 +1,9 @@
+// Spec test (IX): formation declared inline at the point of use.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 4 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+mission InlineForm window 0 [s] .. 300 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha morph to line spacing 20 [m] over 15 [s];
+  Alpha land at Base at 280 [s];
+}

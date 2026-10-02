@@ -1,0 +1,11 @@
+// Spec test (IV): maneuver directed at a sub fleet via dot notation.
+drone Scout   { endurance 25 [min]; max_speed 18 [m/s]; }
+drone Thermal { endurance 40 [min]; max_speed 12 [m/s]; }
+fleet Bravo = 6 of Scout + 2 of Thermal;
+station Base = point (10, 10) altitude 0 [m];
+formation Peine = line spacing 30 [m];
+mission SubFleetTest window 0 [s] .. 300 [s] {
+  Bravo takeoff from Base at 0 [s];
+  Bravo.Scout morph to Peine over 20 [s];
+  Bravo land at Base at 280 [s];
+}

@@ -1,0 +1,18 @@
+// Spec test (XIX): full constraints block attached to a mission.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+zone AOI  = polygon [(0,0), (100,0), (100,100), (0,100)];
+zone Antena = circle at (50, 50) radius 10 [m];
+station Base = point (0, 0) altitude 0 [m];
+mission Guarded window 0 [s] .. 600 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha sweep AOI with lawnmower spacing 20 [m] altitude 40 [m];
+  Alpha land at Base at 590 [s];
+
+  constraints {
+    min_separation 8 [m];
+    battery_reserve 20 [%];
+    exclude Antena;
+    require coverage of AOI >= 95 [%];
+  }
+}

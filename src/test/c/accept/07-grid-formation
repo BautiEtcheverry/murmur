@@ -1,0 +1,10 @@
+// Spec test (VII): grid formation adopted by a fleet with matching cardinality.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 6 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+formation Grilla = grid 3 x 2 spacing 15 [m];
+mission GridAdopt window 0 [s] .. 300 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha morph to Grilla over 20 [s];
+  Alpha land at Base at 280 [s];
+}

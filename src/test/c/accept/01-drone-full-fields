@@ -1,0 +1,8 @@
+// Spec test (I): drone type with all fields including the optional ones.
+drone Scout {
+  endurance 28 [min];
+  max_speed 18 [m/s];
+  max_accel 6 [m/s^2];
+  payload rgb_camera resolution 4000 [px] fov 84 [deg];
+  link_range 1200 [m];
+}

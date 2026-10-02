@@ -1,0 +1,2 @@
+// Spec test (V): circular zone declared with center and radius.
+zone LKP = circle at (200, 180) radius 40 [m];

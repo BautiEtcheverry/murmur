@@ -1,0 +1,4 @@
+// Spec test (III): heterogeneous fleet composed from two drone types.
+drone Scout   { endurance 25 [min]; max_speed 18 [m/s]; }
+drone Thermal { endurance 40 [min]; max_speed 12 [m/s]; }
+fleet Bravo = 6 of Scout + 2 of Thermal;

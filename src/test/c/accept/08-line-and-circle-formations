@@ -1,0 +1,3 @@
+// Spec test (VIII): line and circle formations that adapt to the fleet size.
+formation Peine  = line spacing 30 [m];
+formation Anillo = circle radius 25 [m];

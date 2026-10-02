@@ -1,0 +1,10 @@
+// Spec test (XVI): all fleets must return before a deadline.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+fleet Beta  = 3 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+mission ReturnAll window 0 [s] .. 900 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Beta  takeoff from Base at 30 [s];
+  all return to Base before 880 [s];
+}

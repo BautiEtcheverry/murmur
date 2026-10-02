@@ -1,0 +1,2 @@
+// Spec test (XVIII): convex polygon zone with three vertices.
+zone Triangle = polygon [(0,0), (100,0), (50,100)];

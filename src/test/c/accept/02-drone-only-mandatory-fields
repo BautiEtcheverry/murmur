@@ -1,0 +1,5 @@
+// Spec test (II): drone type that keeps only endurance and max_speed.
+drone Minimal {
+  endurance 20 [min];
+  max_speed 10 [m/s];
+}

@@ -1,0 +1,10 @@
+// Spec test (XI): maneuvers chained implicitly without composition blocks.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+mission Implicit window 0 [s] .. 300 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha hold for 20 [s];
+  Alpha hold for 30 [s];
+  Alpha land at Base at 290 [s];
+}

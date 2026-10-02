@@ -1,0 +1,8 @@
+// Spec test (X): minimal mission with window, takeoff and landing.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+mission Minimal window 0 [s] .. 100 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha land at Base at 90 [s];
+}

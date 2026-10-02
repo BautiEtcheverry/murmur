@@ -1,0 +1,2 @@
+// Spec test (VI): station declared with position and altitude.
+station Base = point (10, 10) altitude 0 [m];

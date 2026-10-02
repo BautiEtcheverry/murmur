@@ -1,0 +1,10 @@
+// Spec test (XIV): lawnmower sweep over a zone.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 4 of Scout;
+zone AOI = polygon [(0,0), (400,0), (400,300), (0,300)];
+station Base = point (0, 0) altitude 0 [m];
+mission Sweep window 0 [s] .. 1200 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha sweep AOI with lawnmower spacing 25 [m] altitude 60 [m];
+  Alpha land at Base at 1180 [s];
+}

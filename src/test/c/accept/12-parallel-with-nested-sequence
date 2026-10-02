@@ -1,0 +1,22 @@
+// Spec test (XII): sequential block nested inside a parallel block.
+drone Scout   { endurance 25 [min]; max_speed 18 [m/s]; }
+drone Thermal { endurance 40 [min]; max_speed 12 [m/s]; }
+fleet Bravo = 3 of Scout + 2 of Thermal;
+zone AOI = polygon [(0,0), (400,0), (400,300), (0,300)];
+zone LKP = circle at (200, 180) radius 40 [m];
+station Base = point (10, 10) altitude 0 [m];
+formation Peine = line spacing 30 [m];
+mission Nested window 0 [s] .. 900 [s] {
+  Bravo takeoff from Base at 0 [s];
+  parallel {
+    sequence {
+      Bravo.Scout morph to Peine over 25 [s];
+      Bravo.Scout sweep AOI with lawnmower spacing 25 [m] altitude 60 [m];
+    }
+    sequence {
+      Bravo.Thermal orbit LKP radius 70 [m] altitude 90 [m] for 300 [s];
+      Bravo.Thermal hold for 60 [s];
+    }
+  }
+  Bravo land at Base at 850 [s];
+}
