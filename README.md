@@ -1,10 +1,18 @@
-[![✗](https://img.shields.io/badge/Release-v2.0.0-ffb600.svg?style=for-the-badge)](https://github.com/agustin-golmar/Flex-Bison-Compiler/releases)
+[![✗](https://img.shields.io/badge/Release-v0.2.0-ffb600.svg?style=for-the-badge)](https://github.com/BautiEtcheverry/murmur/releases)
 
-[![✗](https://github.com/agustin-golmar/Flex-Bison-Compiler/actions/workflows/pipeline.yaml/badge.svg?branch=production)](https://github.com/agustin-golmar/Flex-Bison-Compiler/actions/workflows/pipeline.yaml)
+[![✗](https://github.com/BautiEtcheverry/murmur/actions/workflows/pipeline.yaml/badge.svg?branch=development)](https://github.com/BautiEtcheverry/murmur/actions/workflows/pipeline.yaml)
 
-# Flex-Bison-Compiler
+# Murmur
 
-A base compiler example, developed with Flex and Bison.
+A domain-specific language for specifying and simulating swarm-drone missions. Built with Flex and Bison on top of the course's [Flex-Bison-Compiler](https://github.com/Alpha-Theta-Gamma-Mu/Flex-Bison-Compiler) template.
+
+## Team
+
+| Name                 | File ID | Email                      |
+| :------------------- | :-----: | :------------------------- |
+| Benicio Leite        | 64181   | bleite@itba.edu.ar         |
+| Juan Humphreys       | 65477   | jhumphreys@itba.edu.ar     |
+| Bautista Etcheverry  | 65765   | betcheverry@itba.edu.ar    |
 
 * [Requirements](#requirements)
 * [Configuration](#configuration)
