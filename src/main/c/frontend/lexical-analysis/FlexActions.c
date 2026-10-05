@@ -127,8 +127,8 @@ CompilationStatus IdentifierLexemeAction(void) {
 	return _pushAndDestroy(token);
 }
 
-CompilationStatus UnitLexemeAction(UnitKind unit) {
-	Token * token = createToken(_lexicalAnalyzer, UNIT);
+CompilationStatus UnitLexemeAction(TokenLabel label, UnitKind unit) {
+	Token * token = createToken(_lexicalAnalyzer, label);
 	token->semanticValue->unit = unit;
 	_logTokenAction(__FUNCTION__, token);
 	return _pushAndDestroy(token);
@@ -137,6 +137,13 @@ CompilationStatus UnitLexemeAction(UnitKind unit) {
 CompilationStatus UnknownLexemeAction(void) {
 	Token * token = createToken(_lexicalAnalyzer, UNKNOWN);
 	_logTokenAction(__FUNCTION__, token);
-	destroyToken(token);
+	char * _lexeme = escape(token->lexeme);
+	logError(_logger, "Line %d: unknown character \"%s\".", token->line, _lexeme);
+	free(_lexeme);
+	/**
+	 * No rule expects an UNKNOWN token, so pushing it aborts the parser,
+	 * which releases the AST fragments that are still on its stack.
+	 */
+	_pushAndDestroy(token);
 	return FAILED;
 }

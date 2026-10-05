@@ -4,7 +4,9 @@
 #include "AbstractSyntaxTree.h"
 #include "BisonActions.h"
 
-void yyerror(const YYLTYPE * location, const char * message) {}
+void yyerror(const YYLTYPE * location, const char * message) {
+	SyntaxErrorAction(location, message);
+}
 
 %}
 
@@ -84,7 +86,13 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 %token <integer>  INTEGER
 %token <decimal>  DECIMAL
 %token <string>   IDENTIFIER
-%token <unit>     UNIT
+%token <unit>     TIME_UNIT
+%token <unit>     LENGTH_UNIT
+%token <unit>     SPEED_UNIT
+%token <unit>     ACCELERATION_UNIT
+%token <unit>     ANGLE_UNIT
+%token <unit>     RESOLUTION_UNIT
+%token <unit>     PERCENTAGE_UNIT
 
 %token <token> OPEN_BRACE
 %token <token> CLOSE_BRACE
@@ -98,6 +106,7 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 %token <token> SEMICOLON
 %token <token> EQUALS
 %token <token> PLUS
+%token <token> MINUS
 %token <token> GE
 %token <token> BY
 
@@ -190,8 +199,15 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 %type <statement>            returnStmt
 %type <fleetRef>             fleetRef
 %type <sweepPattern>         sweepPattern
+%type <numeric>              coordinate
 %type <numeric>              number
-%type <quantity>             quantity
+%type <quantity>             timeQuantity
+%type <quantity>             lengthQuantity
+%type <quantity>             speedQuantity
+%type <quantity>             accelerationQuantity
+%type <quantity>             angleQuantity
+%type <quantity>             resolutionQuantity
+%type <quantity>             percentageQuantity
 
 %%
 
@@ -233,15 +249,16 @@ droneFieldList:
 	;
 
 droneField:
-	ENDURANCE quantity                              { $$ = EnduranceFieldSemanticAction($2); }
-	| MAX_SPEED quantity                            { $$ = MaxSpeedFieldSemanticAction($2); }
-	| MAX_ACCEL quantity                            { $$ = MaxAccelFieldSemanticAction($2); }
+	ENDURANCE timeQuantity                          { $$ = EnduranceFieldSemanticAction($2); }
+	| MAX_SPEED speedQuantity                       { $$ = MaxSpeedFieldSemanticAction($2); }
+	| MAX_ACCEL accelerationQuantity                { $$ = MaxAccelFieldSemanticAction($2); }
 	| PAYLOAD payloadDef                           { $$ = PayloadFieldSemanticAction($2); }
-	| LINK_RANGE quantity                           { $$ = LinkRangeFieldSemanticAction($2); }
+	| LINK_RANGE lengthQuantity                     { $$ = LinkRangeFieldSemanticAction($2); }
 	;
 
 payloadDef:
-	IDENTIFIER RESOLUTION quantity FOV quantity     { $$ = PayloadDefSemanticAction($1, $3, $5); }
+	IDENTIFIER RESOLUTION resolutionQuantity FOV angleQuantity
+	                                                { $$ = PayloadDefSemanticAction($1, $3, $5); }
 	;
 
 /* === Fleet === */
@@ -267,23 +284,24 @@ zoneDeclaration:
 
 zoneBody:
 	POLYGON OPEN_BRACKET pointList CLOSE_BRACKET   { $$ = PolygonZoneSemanticAction($3); }
-	| CIRCLE AT point RADIUS quantity               { $$ = CircleZoneSemanticAction($3, $5); }
+	| CIRCLE AT point RADIUS lengthQuantity         { $$ = CircleZoneSemanticAction($3, $5); }
 	;
 
+/** A polygon needs at least three vertices. */
 pointList:
-	point                                           { $$ = PointListSingleSemanticAction($1); }
+	point COMMA point COMMA point                 { $$ = PointListTripleSemanticAction($1, $3, $5); }
 	| pointList COMMA point                        { $$ = PointListAppendSemanticAction($1, $3); }
 	;
 
 point:
-	OPEN_PARENTHESIS number COMMA number CLOSE_PARENTHESIS
+	OPEN_PARENTHESIS coordinate COMMA coordinate CLOSE_PARENTHESIS
 	                                                { $$ = PointSemanticAction($2, $4); }
 	;
 
 /* === Station === */
 
 stationDeclaration:
-	STATION IDENTIFIER EQUALS POINT point ALTITUDE quantity
+	STATION IDENTIFIER EQUALS POINT point ALTITUDE lengthQuantity
 	                                                { $$ = StationDefSemanticAction($2, $5, $7); }
 	;
 
@@ -294,9 +312,10 @@ formationDeclaration:
 	;
 
 formationShape:
-	LINE SPACING quantity                           { $$ = LineFormationShapeSemanticAction($3); }
-	| GRID INTEGER BY INTEGER SPACING quantity      { $$ = GridFormationShapeSemanticAction($2, $4, $6); }
-	| CIRCLE RADIUS quantity                        { $$ = CircleFormationShapeSemanticAction($3); }
+	LINE SPACING lengthQuantity                     { $$ = LineFormationShapeSemanticAction($3); }
+	| GRID INTEGER BY INTEGER SPACING lengthQuantity
+	                                                { $$ = GridFormationShapeSemanticAction($2, $4, $6); }
+	| CIRCLE RADIUS lengthQuantity                  { $$ = CircleFormationShapeSemanticAction($3); }
 	;
 
 formationTarget:
@@ -307,7 +326,7 @@ formationTarget:
 /* === Mission === */
 
 missionDeclaration:
-	MISSION IDENTIFIER WINDOW quantity DOTDOT quantity OPEN_BRACE statementList optionalConstraints CLOSE_BRACE
+	MISSION IDENTIFIER WINDOW timeQuantity DOTDOT timeQuantity OPEN_BRACE statementList optionalConstraints CLOSE_BRACE
 	                                                { $$ = MissionDefSemanticAction($2, $4, $6, $8, $9); }
 	;
 
@@ -323,10 +342,11 @@ constraintList:
 	;
 
 constraint:
-	MIN_SEPARATION quantity                         { $$ = MinSeparationConstraintSemanticAction($2); }
-	| BATTERY_RESERVE quantity                      { $$ = BatteryReserveConstraintSemanticAction($2); }
+	MIN_SEPARATION lengthQuantity                   { $$ = MinSeparationConstraintSemanticAction($2); }
+	| BATTERY_RESERVE percentageQuantity            { $$ = BatteryReserveConstraintSemanticAction($2); }
 	| EXCLUDE IDENTIFIER                            { $$ = ExcludeConstraintSemanticAction($2); }
-	| REQUIRE COVERAGE OF IDENTIFIER GE quantity    { $$ = CoverageConstraintSemanticAction($4, $6); }
+	| REQUIRE COVERAGE OF IDENTIFIER GE percentageQuantity
+	                                                { $$ = CoverageConstraintSemanticAction($4, $6); }
 	;
 
 statementList:
@@ -361,20 +381,21 @@ fleetRef:
 	;
 
 takeoffStmt:
-	fleetRef TAKEOFF FROM IDENTIFIER AT quantity   { $$ = TakeoffStatementSemanticAction($1, $4, $6); }
+	fleetRef TAKEOFF FROM IDENTIFIER AT timeQuantity
+	                                                { $$ = TakeoffStatementSemanticAction($1, $4, $6); }
 	;
 
 landStmt:
-	fleetRef LAND AT IDENTIFIER AT quantity        { $$ = LandStatementSemanticAction($1, $4, $6); }
+	fleetRef LAND AT IDENTIFIER AT timeQuantity     { $$ = LandStatementSemanticAction($1, $4, $6); }
 	;
 
 morphStmt:
-	fleetRef MORPH TO formationTarget OVER quantity
+	fleetRef MORPH TO formationTarget OVER timeQuantity
 	                                                { $$ = MorphStatementSemanticAction($1, $4, $6); }
 	;
 
 sweepStmt:
-	fleetRef SWEEP IDENTIFIER WITH sweepPattern SPACING quantity ALTITUDE quantity
+	fleetRef SWEEP IDENTIFIER WITH sweepPattern SPACING lengthQuantity ALTITUDE lengthQuantity
 	                                                { $$ = SweepStatementSemanticAction($1, $3, $5, $7, $9); }
 	;
 
@@ -385,22 +406,57 @@ sweepPattern:
 	;
 
 orbitStmt:
-	fleetRef ORBIT IDENTIFIER RADIUS quantity ALTITUDE quantity FOR quantity
+	fleetRef ORBIT IDENTIFIER RADIUS lengthQuantity ALTITUDE lengthQuantity FOR timeQuantity
 	                                                { $$ = OrbitStatementSemanticAction($1, $3, $5, $7, $9); }
 	;
 
 holdStmt:
-	fleetRef HOLD FOR quantity                     { $$ = HoldStatementSemanticAction($1, $4); }
+	fleetRef HOLD FOR timeQuantity                  { $$ = HoldStatementSemanticAction($1, $4); }
 	;
 
 returnStmt:
-	fleetRef RETURN TO IDENTIFIER BEFORE quantity  { $$ = ReturnStatementSemanticAction($1, $4, $6); }
+	fleetRef RETURN TO IDENTIFIER BEFORE timeQuantity
+	                                                { $$ = ReturnStatementSemanticAction($1, $4, $6); }
 	;
 
 /* === Numerics === */
 
-quantity:
-	number UNIT                                     { $$ = QuantitySemanticAction($1, $2); }
+/**
+ * Each physical dimension has its own terminal, so a magnitude with a unit of
+ * the wrong dimension (e.g., "max_speed 18 [min]") is a syntax error.
+ */
+timeQuantity:
+	number TIME_UNIT                                { $$ = QuantitySemanticAction($1, $2); }
+	;
+
+lengthQuantity:
+	number LENGTH_UNIT                              { $$ = QuantitySemanticAction($1, $2); }
+	;
+
+speedQuantity:
+	number SPEED_UNIT                               { $$ = QuantitySemanticAction($1, $2); }
+	;
+
+accelerationQuantity:
+	number ACCELERATION_UNIT                        { $$ = QuantitySemanticAction($1, $2); }
+	;
+
+angleQuantity:
+	number ANGLE_UNIT                               { $$ = QuantitySemanticAction($1, $2); }
+	;
+
+resolutionQuantity:
+	number RESOLUTION_UNIT                          { $$ = QuantitySemanticAction($1, $2); }
+	;
+
+percentageQuantity:
+	number PERCENTAGE_UNIT                          { $$ = QuantitySemanticAction($1, $2); }
+	;
+
+/** Only point coordinates can be negative; physical magnitudes cannot. */
+coordinate:
+	number                                          { $$ = $1; }
+	| MINUS number                                  { $$ = NegativeNumericSemanticAction($2); }
 	;
 
 number:

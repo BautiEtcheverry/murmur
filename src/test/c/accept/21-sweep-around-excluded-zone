@@ -1,0 +1,15 @@
+// Spec test (XVII): sweep over a zone that contains an excluded zone.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+zone Campo  = polygon [(0,0), (400,0), (400,300), (0,300)];
+zone Antena = circle at (200, 150) radius 30 [m];
+station Base = point (0, 0) altitude 0 [m];
+mission Contour window 0 [s] .. 900 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha sweep Campo with lawnmower spacing 25 [m] altitude 60 [m];
+  Alpha land at Base at 880 [s];
+
+  constraints {
+    exclude Antena;
+  }
+}

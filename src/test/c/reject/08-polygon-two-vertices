@@ -1,0 +1,2 @@
+// Spec reject (VI): a polygon zone needs at least three vertices.
+zone Segment = polygon [(0,0), (100,0)];

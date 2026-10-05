@@ -215,11 +215,12 @@ ZoneDef * ZoneDefNameSemanticAction(char * name, ZoneDef * body) {
 	return body;
 }
 
-PointList * PointListSingleSemanticAction(Point point) {
+PointList * PointListTripleSemanticAction(Point first, Point second, Point third) {
 	_log(__FUNCTION__);
 	PointList * node = calloc(1, sizeof(PointList));
-	node->point = _clonePoint(point);
-	return node;
+	node->point = _clonePoint(first);
+	node = PointListAppendSemanticAction(node, second);
+	return PointListAppendSemanticAction(node, third);
 }
 
 PointList * PointListAppendSemanticAction(PointList * list, Point point) {
@@ -508,9 +509,21 @@ Numeric DecimalNumericSemanticAction(double value) {
 	return n;
 }
 
+Numeric NegativeNumericSemanticAction(Numeric number) {
+	number.integerValue = -number.integerValue;
+	number.decimalValue = -number.decimalValue;
+	return number;
+}
+
 Quantity QuantitySemanticAction(Numeric number, UnitKind unit) {
 	Quantity q;
 	q.number = number;
 	q.unit = unit;
 	return q;
+}
+
+/* ERRORS */
+
+void SyntaxErrorAction(const YYLTYPE * location, const char * message) {
+	logError(_logger, "Line %d: %s.", location->first_line, message);
 }

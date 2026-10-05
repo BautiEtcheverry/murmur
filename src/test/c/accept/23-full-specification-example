@@ -1,0 +1,51 @@
+// Spec examples (section 6) as a single program, with the syntax updated
+// after the Stage I feedback: `drone`, `circle at`, and the constraints block
+// inside the mission.
+
+drone Quad {
+  endurance 35 [min];
+  max_speed 15 [m/s];
+  max_accel 3 [m/s^2];
+  payload thermal_camera resolution 640 [px] fov 57 [deg];
+  link_range 1000 [m];
+}
+
+drone FixedWing {
+  endurance 90 [min];
+  max_speed 25 [m/s];
+  max_accel 2 [m/s^2];
+  payload rgb_camera resolution 4000 [px] fov 70 [deg];
+}
+
+fleet Alpha = 3 of Quad + 1 of FixedWing;
+fleet Beta = 2 of Quad;
+
+zone Campo = polygon [(0,0), (800,0), (800,500), (0,500)];
+zone Antena = circle at (600, 400) radius 60 [m];
+zone PDI = circle at (200, 300) radius 10 [m];
+
+station Base = point (10, 10) altitude 0 [m];
+
+formation Peine = line spacing 30 [m];
+
+mission Relevamiento window 0 [s] .. 1500 [s] {
+  // Staggered takeoff of both fleets:
+  Alpha takeoff from Base at 0 [s];
+  Beta takeoff from Base at 30 [s];
+
+  /* Adopt the sweep formation, then work the field while the other fleet
+     orbits the point of interest. */
+  Alpha morph to Peine over 20 [s];
+  parallel {
+    Alpha sweep Campo with lawnmower spacing 40 [m] altitude 60 [m];
+    Beta orbit PDI radius 80 [m] altitude 90 [m] for 600 [s];
+  }
+
+  all return to Base before 1400 [s];
+
+  constraints {
+    min_separation 20 [m];
+    battery_reserve 20 [%];
+    exclude Antena;
+  }
+}

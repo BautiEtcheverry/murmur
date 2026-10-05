@@ -1,0 +1,6 @@
+// The minus sign is only valid in point coordinates; a physical magnitude
+// cannot be negative.
+drone Scout {
+  endurance -25 [min];
+  max_speed 18 [m/s];
+}

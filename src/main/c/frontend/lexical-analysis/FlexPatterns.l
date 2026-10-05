@@ -24,7 +24,7 @@ extern CompilationStatus PunctuationLexemeAction(TokenLabel label);
 extern CompilationStatus IntegerLexemeAction(void);
 extern CompilationStatus DecimalLexemeAction(void);
 extern CompilationStatus IdentifierLexemeAction(void);
-extern CompilationStatus UnitLexemeAction(UnitKind unit);
+extern CompilationStatus UnitLexemeAction(TokenLabel label, UnitKind unit);
 extern CompilationStatus UnknownLexemeAction(void);
 
 %}
@@ -42,17 +42,17 @@ whitespace      [[:space:]]+
 
 "//"[^\n]*                          { return IgnoredLexemeAction(); }
 
-"[s]"                               { return UnitLexemeAction(UNIT_SECONDS); }
-"[min]"                             { return UnitLexemeAction(UNIT_MINUTES); }
-"[m]"                               { return UnitLexemeAction(UNIT_METERS); }
-"[km]"                              { return UnitLexemeAction(UNIT_KILOMETERS); }
-"[m/s]"                             { return UnitLexemeAction(UNIT_METERS_PER_SECOND); }
-"[km/h]"                            { return UnitLexemeAction(UNIT_KILOMETERS_PER_HOUR); }
-"[m/s^2]"                           { return UnitLexemeAction(UNIT_METERS_PER_SECOND_SQUARED); }
-"[deg]"                             { return UnitLexemeAction(UNIT_DEGREES); }
-"[rad]"                             { return UnitLexemeAction(UNIT_RADIANS); }
-"[px]"                              { return UnitLexemeAction(UNIT_PIXELS); }
-"[%]"                               { return UnitLexemeAction(UNIT_PERCENT); }
+"[s]"                               { return UnitLexemeAction(TIME_UNIT, UNIT_SECONDS); }
+"[min]"                             { return UnitLexemeAction(TIME_UNIT, UNIT_MINUTES); }
+"[m]"                               { return UnitLexemeAction(LENGTH_UNIT, UNIT_METERS); }
+"[km]"                              { return UnitLexemeAction(LENGTH_UNIT, UNIT_KILOMETERS); }
+"[m/s]"                             { return UnitLexemeAction(SPEED_UNIT, UNIT_METERS_PER_SECOND); }
+"[km/h]"                            { return UnitLexemeAction(SPEED_UNIT, UNIT_KILOMETERS_PER_HOUR); }
+"[m/s^2]"                           { return UnitLexemeAction(ACCELERATION_UNIT, UNIT_METERS_PER_SECOND_SQUARED); }
+"[deg]"                             { return UnitLexemeAction(ANGLE_UNIT, UNIT_DEGREES); }
+"[rad]"                             { return UnitLexemeAction(ANGLE_UNIT, UNIT_RADIANS); }
+"[px]"                              { return UnitLexemeAction(RESOLUTION_UNIT, UNIT_PIXELS); }
+"[%]"                               { return UnitLexemeAction(PERCENTAGE_UNIT, UNIT_PERCENT); }
 
 "drone"                             { return KeywordLexemeAction(DRONE); }
 "fleet"                             { return KeywordLexemeAction(FLEET); }
@@ -118,6 +118,7 @@ whitespace      [[:space:]]+
 ";"                                 { return PunctuationLexemeAction(SEMICOLON); }
 "="                                 { return PunctuationLexemeAction(EQUALS); }
 "+"                                 { return PunctuationLexemeAction(PLUS); }
+"-"                                 { return PunctuationLexemeAction(MINUS); }
 
 [0-9]+"."[0-9]+                     { return DecimalLexemeAction(); }
 [0-9]+                              { return IntegerLexemeAction(); }

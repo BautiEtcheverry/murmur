@@ -1,0 +1,5 @@
+// Point coordinates are relative to the mission origin, so they can be
+// negative (integers and decimals).
+station Base = point (-50, -20.5) altitude 0 [m];
+zone Triangle = polygon [(-100,-100), (100,-100), (0,100)];
+zone Mark = circle at (-12.5, 30) radius 5 [m];

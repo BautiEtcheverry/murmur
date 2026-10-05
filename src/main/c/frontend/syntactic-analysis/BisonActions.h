@@ -42,7 +42,7 @@ FleetComponent *      FleetComponentSemanticAction(long count, char * droneTypeN
 ZoneDef *             PolygonZoneSemanticAction(PointList * vertices);
 ZoneDef *             CircleZoneSemanticAction(Point center, Quantity radius);
 ZoneDef *             ZoneDefNameSemanticAction(char * name, ZoneDef * body);
-PointList *           PointListSingleSemanticAction(Point point);
+PointList *           PointListTripleSemanticAction(Point first, Point second, Point third);
 PointList *           PointListAppendSemanticAction(PointList * list, Point point);
 Point                 PointSemanticAction(Numeric x, Numeric y);
 
@@ -85,6 +85,10 @@ Statement *           SequenceStatementSemanticAction(StatementList * body);
 /** Numerics. */
 Numeric               IntegerNumericSemanticAction(long value);
 Numeric               DecimalNumericSemanticAction(double value);
+Numeric               NegativeNumericSemanticAction(Numeric number);
 Quantity              QuantitySemanticAction(Numeric number, UnitKind unit);
+
+/** Errors. */
+void                  SyntaxErrorAction(const YYLTYPE * location, const char * message);
 
 #endif

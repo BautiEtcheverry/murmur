@@ -1,0 +1,7 @@
+// [%] and [px] are different dimensions, so a sensor resolution cannot be
+// given as a percentage.
+drone Scout {
+  endurance 25 [min];
+  max_speed 18 [m/s];
+  payload rgb_camera resolution 95 [%] fov 84 [deg];
+}
