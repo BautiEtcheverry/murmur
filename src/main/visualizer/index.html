@@ -3,367 +3,352 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Murmur Visualizer</title>
+<title>Murmur · Visualizador de misión</title>
+<link rel="stylesheet" href="shared/core.css">
 <style>
-:root {
-	--bg: #f6f7f9;
-	--panel: #ffffff;
-	--ink: #1d2330;
-	--muted: #667085;
-	--line: #d9dde5;
-	--accent: #2f6fec;
-	--zone: #2f6fec;
-	--excluded: #d92d20;
-	--station: #1d2330;
-	--grid: #eceff3;
-	--mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+button, select, input { font-family: inherit; }
+header { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+header h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
+header p { margin: 0; color: var(--muted); font-size: 13px; }
+header .spacer { flex: 1; }
+header input { font-size: 12px; max-width: 210px; color: var(--muted); }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: var(--line); border-bottom: 1px solid var(--line); }
+.fact { background: var(--panel); padding: 12px 24px; }
+.fact small { display: block; color: var(--muted); font-size: 12px; }
+.fact b { display: block; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.25; }
+.fact span { display: block; color: var(--muted); font-size: 12px; }
+.fact .pass { color: var(--ink); }
+
+main { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; padding: 16px 24px 40px; align-items: start; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.card h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.card .sub { margin: 0 0 8px; color: var(--muted); font-size: 12.5px; }
+.left { position: sticky; top: 12px; display: grid; gap: 16px; }
+#map { width: 100%; max-height: 52vh; display: block; }
+.toggles { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.right { display: grid; gap: 16px; }
+.mm-legend { margin: 8px 0 0; }
+.series-legend { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.series-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.series-legend i { width: 14px; height: 0; border-top: 2px solid; }
+.series-legend { margin-bottom: 6px; }
+
+.chart { position: relative; height: 210px; }
+.chart canvas { cursor: crosshair; }
+.chart-missing { color: var(--muted); font-size: 13px; padding: 24px 0; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--line); }
+thead th { color: var(--muted); font-weight: 500; font-size: 12px; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+tr.pick { cursor: pointer; }
+tr.pick:hover, tr[aria-selected="true"] { background: var(--soft); }
+.route-note { margin: 0 0 8px; padding: 6px 10px; background: var(--soft); border-radius: 6px; font-size: 12.5px; }
+.route-note button { font: inherit; font-size: 12.5px; margin-left: 4px; padding: 1px 8px; border: 1px solid var(--axis); border-radius: 6px; background: var(--panel); cursor: pointer; }
+.swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+.scroll { overflow-x: auto; }
+
+.empty { max-width: 600px; margin: 14vh auto; padding: 32px 36px; background: var(--panel); border: 1px dashed var(--axis); border-radius: 8px; }
+.empty h1 { margin: 0 0 8px; font-size: 26px; font-weight: 600; }
+.empty p { color: var(--muted); }
+.empty code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; background: var(--soft); padding: 1px 5px; border-radius: 3px; color: var(--ink); }
+.error { color: var(--excluded) !important; font-weight: 600; }
+
+@media (max-width: 1000px) {
+	main { grid-template-columns: 1fr; padding: 12px; }
+	.left { position: static; }
 }
-@media (prefers-color-scheme: dark) {
-	:root {
-		--bg: #12151c;
-		--panel: #1a1f29;
-		--ink: #e6e9ef;
-		--muted: #98a2b3;
-		--line: #2c3341;
-		--accent: #6f9cff;
-		--zone: #6f9cff;
-		--excluded: #ff6b5e;
-		--station: #e6e9ef;
-		--grid: #1f2530;
-	}
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
-header { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
-header h1 { font-size: 16px; margin: 0; letter-spacing: .02em; }
-header .file { margin-left: auto; display: flex; gap: 8px; align-items: center; color: var(--muted); }
-main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0; height: calc(100vh - 57px); }
-@media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } }
-#stage { position: relative; min-height: 420px; }
-#map { width: 100%; height: 100%; display: block; }
-#drop { position: absolute; inset: 24px; border: 2px dashed var(--line); border-radius: 12px; display: grid; place-items: center; text-align: center; color: var(--muted); padding: 24px; }
-#drop.hidden { display: none; }
-#drop code { font-family: var(--mono); }
-aside { background: var(--panel); border-left: 1px solid var(--line); overflow: auto; padding: 16px; }
-aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 8px; }
-aside h2:first-child { margin-top: 0; }
-.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-family: var(--mono); font-size: 12px; }
-.kv span:nth-child(odd) { color: var(--muted); }
-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
-th, td { text-align: left; padding: 3px 4px; border-bottom: 1px solid var(--line); }
-th { color: var(--muted); font-weight: 500; }
-.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
-.bar { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; min-width: 50px; }
-.bar > i { display: block; height: 100%; background: var(--accent); }
-.controls { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--panel); border-top: 1px solid var(--line); position: absolute; left: 0; right: 0; bottom: 0; flex-wrap: wrap; }
-.controls input[type=range] { flex: 1; min-width: 160px; }
-button, select { font: inherit; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-#clock { font-family: var(--mono); min-width: 120px; }
-#gantt { width: 100%; display: block; }
-.ok { color: #12b76a; }
-.fail { color: var(--excluded); }
-label.toggle { display: flex; gap: 6px; align-items: center; color: var(--muted); }
 </style>
 </head>
 <body>
 <header>
-	<h1>Murmur · Visualizador de plan de vuelo</h1>
-	<div class="file">
-		<input type="file" id="file" accept=".json,application/json">
+	<div>
+		<h1 id="mission-name">Visualizador de misión</h1>
+		<p id="mission-sub">Murmur · análisis de un plan de vuelo</p>
 	</div>
+	<span class="spacer"></span>
+	<input type="file" id="file" accept=".json,application/json" aria-label="Abrir un plan de vuelo">
 </header>
-<main>
-	<div id="stage">
-		<svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
-		<div id="drop">
-			<div>
-				<p><strong>Arrastrá un plan de vuelo (JSON) acá</strong>, o elegilo con el botón de arriba.</p>
-				<p>Se genera con <code>src/main/bash/run.sh programa.murmur salida.json</code>.</p>
-				<p>También se puede servir por HTTP y abrir <code>index.html?src=ruta/al/plan.json</code>.</p>
-			</div>
+
+<div class="empty" id="empty">
+	<h1>Analizá un plan de vuelo</h1>
+	<p>Elegí con el botón de arriba, o arrastrá sobre esta página, el JSON que genera el compilador de Murmur con <code>src/main/bash/run.sh programa salida.json</code>.</p>
+	<p>El visualizador muestra el mapa de la misión y grafica la altitud y la batería de cada aeronave y la distancia entre las dos más cercanas, y las compara con los límites declarados en la misión.</p>
+	<p class="error" id="error" hidden></p>
+</div>
+
+<div id="app" hidden>
+	<section class="facts" id="facts" aria-label="Indicadores de la misión"></section>
+	<main>
+		<div class="left">
+			<section class="card">
+				<h2>Mapa de la misión</h2>
+				<p class="sub">Vista desde arriba, en metros. Cada aeronave arrastra la estela de sus últimos 45 segundos. Hacé clic en una para ver su recorrido completo.</p>
+				<p class="route-note" id="route-note" hidden></p>
+				<svg id="map"></svg>
+				<div class="mm-legend" id="legend"></div>
+				<div class="toggles">
+					<label><input type="checkbox" id="opt-foot"> Huella del sensor</label>
+					<label><input type="checkbox" id="opt-labels" checked> Identificadores</label>
+				</div>
+			</section>
+			<section class="card">
+				<h2>Plan de maniobras</h2>
+				<p class="sub">Cada fila es una maniobra, en el orden en que empiezan. La barra muestra en qué parte de la misión ocurre. Hacé clic en una fila para ir a su inicio.</p>
+				<div id="transport" style="margin-bottom:12px"></div>
+				<div id="timeline"></div>
+			</section>
 		</div>
-		<div class="controls">
-			<button id="play" disabled>▶</button>
-			<input type="range" id="time" min="0" max="0" step="0.1" value="0" disabled>
-			<span id="clock">t = 0.0 s</span>
-			<select id="speed">
-				<option value="1">1×</option>
-				<option value="5">5×</option>
-				<option value="20" selected>20×</option>
-				<option value="60">60×</option>
-			</select>
-			<label class="toggle"><input type="checkbox" id="trails" checked> trazas</label>
-			<label class="toggle"><input type="checkbox" id="footprints"> huella del sensor</label>
+		<div class="right">
+			<section class="card">
+				<h2>Altitud de cada aeronave</h2>
+				<p class="sub">Metros sobre el origen. Las mesetas altas son los niveles de tránsito que separan a las aeronaves mientras se desplazan.</p>
+				<div class="series-legend" id="series-legend"></div>
+				<div class="chart" id="chart-altitude"></div>
+			</section>
+			<section class="card">
+				<h2>Batería restante</h2>
+				<p class="sub" id="battery-sub">Porcentaje de carga de cada aeronave.</p>
+				<div class="chart" id="chart-battery"></div>
+			</section>
+			<section class="card">
+				<h2>Distancia entre las dos aeronaves más cercanas</h2>
+				<p class="sub" id="separation-sub">En metros, considerando solo las aeronaves en vuelo.</p>
+				<div class="chart" id="chart-separation"></div>
+			</section>
+			<section class="card">
+				<h2 id="state-title">Estado en el instante seleccionado</h2>
+				<p class="sub">Los mismos datos de los gráficos, en números. Hacé clic en una fila para ver el recorrido de esa aeronave en el mapa.</p>
+				<div class="scroll"><table>
+					<thead><tr><th scope="col">Aeronave</th><th scope="col">Flota</th><th scope="col">Fase</th><th scope="col" class="n">Altitud</th><th scope="col" class="n">Velocidad</th><th scope="col" class="n">Batería</th></tr></thead>
+					<tbody id="state"></tbody>
+				</table></div>
+			</section>
 		</div>
-	</div>
-	<aside>
-		<h2>Misión</h2>
-		<div class="kv" id="mission"><span>—</span><span></span></div>
-		<h2>Fases</h2>
-		<svg id="gantt" height="0"></svg>
-		<h2>Restricciones y cobertura</h2>
-		<div id="constraints" class="kv"><span>—</span><span></span></div>
-		<h2>Aeronaves</h2>
-		<table>
-			<thead><tr><th>id</th><th>fase</th><th>z [m]</th><th>batería</th></tr></thead>
-			<tbody id="drones"></tbody>
-		</table>
-	</aside>
-</main>
+	</main>
+</div>
+
+<!-- Chart.js 4.4.1 (MIT), https://www.chartjs.org; vendored, see shared/vendor/README.md -->
+<script src="shared/vendor/chart.umd.min.js"></script>
+<script src="shared/core.js"></script>
 <script>
 "use strict";
-const SVG = "http://www.w3.org/2000/svg";
-const PALETTE = ["#2f6fec", "#e8590c", "#12b76a", "#9e44db", "#d6409f", "#0e9384", "#ca8504", "#475467"];
+const { h, num, meters, percent, clock, duration, PHASES } = Murmur;
 const $ = (id) => document.getElementById(id);
-const state = { log: null, t: 0, playing: false, last: 0, colors: {}, byId: {}, tracks: {}, scale: 1 };
 
-function el(name, attrs = {}, parent) {
-	const node = document.createElementNS(SVG, name);
-	for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
-	if (parent) parent.appendChild(node);
-	return node;
-}
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const charts = [];
 
-/** Escapes every value interpolated into HTML (the log may come from any source). */
-function esc(value) {
-	return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
-
-function fmt(value, digits = 1) {
-	return value === null || value === undefined ? "—" : Number(value).toFixed(digits);
-}
-
-function load(log) {
-	if (log.format !== "murmur-flight-log") {
-		alert("El archivo no es un plan de vuelo de Murmur.");
+/**
+ * Line chart over mission time, drawn with Chart.js. Every series shares the
+ * single y axis and the same time grid (null = no value at that instant).
+ * Hovering moves the mission to that instant; a vertical line marks it in
+ * every chart.
+ */
+function lineChart(host, { times, series, unit, digits = 1, limit, yMax, player, footer }) {
+	Murmur.clear(host);
+	if (typeof Chart === "undefined") {
+		host.appendChild(h("p", { class: "chart-missing" }, "No se pudo cargar la librería de gráficos (falta el archivo shared/vendor/chart.umd.min.js). Los mismos datos están en la tabla de abajo."));
 		return;
 	}
-	state.log = log;
-	state.t = log.mission ? log.mission.window[0] : 0;
-	state.colors = {};
-	(log.fleets || []).forEach((fleet, k) => fleet.aircraft.forEach((id) => state.colors[id] = PALETTE[k % PALETTE.length]));
-	state.byId = Object.fromEntries((log.aircraft || []).map((a) => [a.id, a]));
-	state.tracks = {};
-	for (const frame of log.timeline.frames) {
-		for (const d of frame.drones) (state.tracks[d.id] ||= []).push([frame.t, d.x, d.y, d.z, d.phase, d.battery]);
+	const canvas = h("canvas", { role: "img" });
+	host.appendChild(canvas);
+	const ink = css("--ink"), muted = css("--faint"), line = css("--line");
+	const datasets = series.map((item) => ({
+		label: item.label, data: item.values.map((v, k) => ({ x: times[k], y: v })),
+		borderColor: css(item.color), backgroundColor: css(item.color), borderWidth: 1.6, pointRadius: 0, pointHoverRadius: 3, tension: 0, spanGaps: false,
+	}));
+	if (limit) {
+		datasets.push({
+			label: limit.label, data: times.map((t) => ({ x: t, y: limit.value })),
+			borderColor: ink, backgroundColor: ink, borderWidth: 1.2, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0, isLimit: true,
+		});
 	}
-	const frames = log.timeline.frames;
-	const t0 = frames.length ? frames[0].t : 0;
-	const t1 = frames.length ? frames[frames.length - 1].t : 0;
-	Object.assign($("time"), { min: t0, max: t1, value: t0, disabled: frames.length === 0 });
-	$("play").disabled = frames.length === 0;
-	$("drop").classList.add("hidden");
-	drawStatic();
-	drawGantt();
-	drawPanel();
-	update();
-}
-
-function bounds(log) {
-	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-	const add = (x, y) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); };
-	(log.zones || []).forEach((z) => z.vertices.forEach(([x, y]) => add(x, y)));
-	(log.stations || []).forEach((s) => add(...s.position));
-	Object.values(state.tracks).forEach((track) => track.forEach(([, x, y]) => add(x, y)));
-	if (!isFinite(minX)) { minX = minY = -100; maxX = maxY = 100; }
-	const pad = Math.max(maxX - minX, maxY - minY) * 0.08 + 10;
-	return { minX: minX - pad, minY: minY - pad, maxX: maxX + pad, maxY: maxY + pad };
-}
-
-function drawStatic() {
-	const log = state.log;
-	const map = $("map");
-	map.innerHTML = "";
-	const b = bounds(log);
-	const w = b.maxX - b.minX, h = b.maxY - b.minY;
-	state.scale = Math.max(w, h) / 600;
-	map.setAttribute("viewBox", `${b.minX} ${-b.maxY} ${w} ${h + 60 * state.scale}`);
-	const s = state.scale;
-	const defs = el("defs", {}, map);
-	const pattern = el("pattern", { id: "hatch", width: 8 * s, height: 8 * s, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
-	el("line", { x1: 0, y1: 0, x2: 0, y2: 8 * s, stroke: "var(--excluded)", "stroke-width": 2 * s }, pattern);
-	// Grid every "nice" step.
-	const step = Math.pow(10, Math.floor(Math.log10(Math.max(w, h) / 5)));
-	const grid = el("g", { stroke: "var(--grid)", "stroke-width": s }, map);
-	for (let x = Math.ceil(b.minX / step) * step; x <= b.maxX; x += step) el("line", { x1: x, y1: -b.maxY, x2: x, y2: -b.minY }, grid);
-	for (let y = Math.ceil(b.minY / step) * step; y <= b.maxY; y += step) el("line", { x1: b.minX, y1: -y, x2: b.maxX, y2: -y }, grid);
-	const zones = el("g", {}, map);
-	for (const zone of log.zones || []) {
-		const points = zone.vertices.map(([x, y]) => `${x},${-y}`).join(" ");
-		const color = zone.excluded ? "var(--excluded)" : "var(--zone)";
-		el("polygon", { points, fill: zone.excluded ? "url(#hatch)" : color, "fill-opacity": zone.excluded ? 1 : 0.08, stroke: color, "stroke-width": 1.5 * s, "stroke-dasharray": zone.swept || zone.excluded ? "" : `${4 * s} ${3 * s}` }, zones);
-		const label = el("text", { x: zone.center[0], y: -zone.center[1], "font-size": 12 * s, fill: color, "text-anchor": "middle", "font-weight": 600 }, zones);
-		label.textContent = zone.name + (zone.coverage !== null && zone.coverage !== undefined ? ` · ${fmt(zone.coverage * 100)}%` : "");
-	}
-	for (const station of log.stations || []) {
-		const [x, y] = station.position;
-		el("rect", { x: x - 5 * s, y: -y - 5 * s, width: 10 * s, height: 10 * s, fill: "var(--station)" }, zones);
-		const label = el("text", { x: x + 8 * s, y: -y + 14 * s, "font-size": 11 * s, fill: "var(--station)" }, zones);
-		label.textContent = station.name;
-	}
-	state.trailLayer = el("g", { fill: "none", "stroke-width": 1.2 * s, "stroke-linejoin": "round" }, map);
-	state.footLayer = el("g", {}, map);
-	state.droneLayer = el("g", {}, map);
-	state.trails = {};
-	state.markers = {};
-	for (const [id, track] of Object.entries(state.tracks)) {
-		const color = state.colors[id] || "var(--accent)";
-		el("polyline", { points: track.map(([, x, y]) => `${x},${-y}`).join(" "), stroke: color, "stroke-opacity": 0.18 }, state.trailLayer);
-		state.trails[id] = el("polyline", { stroke: color, "stroke-opacity": 0.9 }, state.trailLayer);
-		const g = el("g", {}, state.droneLayer);
-		state.markers[id] = {
-			g,
-			foot: el("circle", { fill: color, "fill-opacity": 0.12, stroke: color, "stroke-opacity": 0.3, "stroke-width": s }, state.footLayer),
-			dot: el("circle", { r: 4.5 * s, fill: color, stroke: "var(--panel)", "stroke-width": 1.5 * s }, g),
-			text: el("text", { "font-size": 10 * s, fill: "var(--ink)", "font-family": "ui-monospace, monospace" }, g),
-		};
-	}
-	// Scale bar.
-	const bar = el("g", { stroke: "var(--muted)", "stroke-width": s }, map);
-	const y0 = -b.minY + 30 * s;
-	el("line", { x1: b.minX + 20 * s, y1: y0, x2: b.minX + 20 * s + step, y2: y0 }, bar);
-	const t = el("text", { x: b.minX + 20 * s, y: y0 + 14 * s, "font-size": 11 * s, fill: "var(--muted)", stroke: "none" }, bar);
-	t.textContent = `${step} m`;
-}
-
-function sample(track, t) {
-	if (!track.length || t < track[0][0]) return null;
-	let lo = 0, hi = track.length - 1;
-	if (t >= track[hi][0]) return { p: track[hi], i: hi };
-	while (lo + 1 < hi) { const mid = (lo + hi) >> 1; if (track[mid][0] <= t) lo = mid; else hi = mid; }
-	const a = track[lo], b = track[hi];
-	const u = (t - a[0]) / (b[0] - a[0] || 1);
-	const mix = (k) => a[k] + u * (b[k] - a[k]);
-	return { p: [t, mix(1), mix(2), mix(3), a[4], mix(5)], i: lo };
-}
-
-function update() {
-	const log = state.log;
-	if (!log) return;
-	const t = state.t;
-	$("clock").textContent = `t = ${t.toFixed(1)} s`;
-	$("time").value = t;
-	const s = state.scale;
-	const rows = [];
-	const showTrails = $("trails").checked;
-	const showFoot = $("footprints").checked;
-	for (const [id, track] of Object.entries(state.tracks)) {
-		const result = sample(track, t);
-		const marker = state.markers[id];
-		if (!result) {
-			marker.g.setAttribute("display", "none");
-			marker.foot.setAttribute("display", "none");
-			state.trails[id].setAttribute("points", "");
-			continue;
-		}
-		const [, x, y, z, phase, battery] = result.p;
-		marker.g.setAttribute("display", "");
-		marker.dot.setAttribute("cx", x);
-		marker.dot.setAttribute("cy", -y);
-		marker.text.setAttribute("x", x + 7 * s);
-		marker.text.setAttribute("y", -y - 7 * s);
-		marker.text.textContent = id;
-		const type = log.droneTypes.find((d) => d.name === (state.byId[id] || {}).type);
-		const radius = type && type.payload && phase !== "ground" ? z * Math.tan(type.payload.fov / 2) : 0;
-		marker.foot.setAttribute("display", showFoot && radius > 0 ? "" : "none");
-		marker.foot.setAttribute("cx", x);
-		marker.foot.setAttribute("cy", -y);
-		marker.foot.setAttribute("r", radius);
-		const head = track.slice(0, result.i + 1).map(([, px, py]) => `${px},${-py}`);
-		head.push(`${x},${-y}`);
-		state.trails[id].setAttribute("points", showTrails ? head.join(" ") : "");
-		rows.push(`<tr><td><span class="swatch" style="background:${esc(state.colors[id])}"></span>${esc(id)}</td><td>${esc(phase)}</td><td>${fmt(z)}</td><td><div class="bar"><i style="width:${Math.max(0, battery * 100)}%"></i></div></td></tr>`);
-	}
-	$("drones").innerHTML = rows.join("") || `<tr><td colspan="4">sin aeronaves desplegadas</td></tr>`;
-	if (state.cursor) {
-		state.cursor.setAttribute("x1", state.ganttX(t));
-		state.cursor.setAttribute("x2", state.ganttX(t));
-	}
-}
-
-function drawGantt() {
-	const log = state.log;
-	const gantt = $("gantt");
-	gantt.innerHTML = "";
-	const phases = (log.phases || []).filter((p) => p.maneuver !== "sequence" && p.maneuver !== "parallel");
-	if (!log.mission || !phases.length) { gantt.setAttribute("height", 0); state.cursor = null; return; }
-	const width = 300, row = 18;
-	const [w0, w1] = log.mission.window;
-	gantt.setAttribute("viewBox", `0 0 ${width} ${phases.length * row + 6}`);
-	gantt.setAttribute("height", phases.length * row + 6);
-	state.ganttX = (t) => 4 + (t - w0) / (w1 - w0 || 1) * (width - 8);
-	el("rect", { x: 4, y: 0, width: width - 8, height: phases.length * row, fill: "var(--grid)", rx: 3 }, gantt);
-	phases.forEach((phase, k) => {
-		const x0 = state.ganttX(phase.start), x1 = state.ganttX(phase.end);
-		const rect = el("rect", { x: x0, y: k * row + 3, width: Math.max(2, x1 - x0), height: row - 6, fill: "var(--accent)", "fill-opacity": 0.75, rx: 2 }, gantt);
-		const title = el("title", {}, rect);
-		title.textContent = `${phase.label}: ${fmt(phase.start)} – ${fmt(phase.end)} s`;
-		const text = el("text", { x: Math.min(x1 + 4, width - 4), y: k * row + 13, "font-size": 10, fill: "var(--ink)", "text-anchor": x1 + 4 > width - 90 ? "end" : "start" }, gantt);
-		text.textContent = phase.label;
+	const cursor = {
+		id: "cursor",
+		afterDatasetsDraw(chart) {
+			const { ctx, chartArea, scales } = chart;
+			const x = scales.x.getPixelForValue(player.t);
+			if (x < chartArea.left || x > chartArea.right) return;
+			ctx.save();
+			ctx.strokeStyle = ink;
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.moveTo(x, chartArea.top);
+			ctx.lineTo(x, chartArea.bottom);
+			ctx.stroke();
+			if (limit) {
+				ctx.fillStyle = ink;
+				ctx.font = "600 11px sans-serif";
+				ctx.textAlign = "right";
+				ctx.lineWidth = 4;
+				ctx.strokeStyle = css("--panel");
+				ctx.strokeText(limit.label, chartArea.right - 4, scales.y.getPixelForValue(limit.value) - 6);
+				ctx.fillText(limit.label, chartArea.right - 4, scales.y.getPixelForValue(limit.value) - 6);
+			}
+			ctx.restore();
+		},
+	};
+	const chart = new Chart(canvas, {
+		type: "line",
+		data: { datasets },
+		plugins: [cursor],
+		options: {
+			animation: false, parsing: false, normalized: true, responsive: true, maintainAspectRatio: false,
+			interaction: { mode: "index", intersect: false },
+			onHover: (event, elements, instance) => {
+				if (event.x === null || event.x === undefined) return;
+				const t = instance.scales.x.getValueForPixel(event.x);
+				if (isFinite(t)) player.seek(t);
+			},
+			scales: {
+				x: { type: "linear", min: times[0], max: times[times.length - 1], border: { color: css("--axis") }, grid: { display: false },
+					ticks: { color: muted, maxTicksLimit: 8, callback: (v) => clock(v) } },
+				y: { min: 0, suggestedMax: yMax, border: { display: false }, grid: { color: line },
+					ticks: { color: muted, maxTicksLimit: 5, callback: (v) => `${num(v)} ${unit}` } },
+			},
+			plugins: {
+				legend: { display: false },
+				tooltip: {
+					backgroundColor: css("--panel"), borderColor: css("--axis"), borderWidth: 1, titleColor: ink, bodyColor: ink, footerColor: css("--muted"), footerFont: { weight: "normal" },
+					boxWidth: 8, boxHeight: 8, usePointStyle: true, padding: 10,
+					filter: (item) => !item.dataset.isLimit && item.parsed.y !== null,
+					callbacks: {
+						title: (items) => (items.length ? `${clock(items[0].parsed.x)}  ·  t = ${num(items[0].parsed.x)} s` : ""),
+						label: (item) => ` ${item.dataset.label}: ${num(item.parsed.y, digits)} ${unit}`,
+						footer: (items) => (footer && items.length ? footer(items[0].parsed.x) : ""),
+					},
+				},
+			},
+		},
 	});
-	state.cursor = el("line", { y1: 0, y2: phases.length * row, stroke: "var(--excluded)", "stroke-width": 1.5 }, gantt);
+	charts.push(chart);
 }
 
-function drawPanel() {
-	const log = state.log;
-	// Values are escaped, except those wrapped by html() (markup built here from numbers).
-	// Only objects created here can carry markup (a JSON value cannot forge membership).
-	const trusted = new WeakSet();
-	const html = (markup) => { const wrapper = { markup }; trusted.add(wrapper); return wrapper; };
-	const kv = (pairs) => pairs.map(([k, v]) => `<span>${esc(k)}</span><span>${trusted.has(v) ? v.markup : esc(v)}</span>`).join("");
-	$("mission").innerHTML = log.mission
-		? kv([["nombre", log.mission.name], ["ventana", `${log.mission.window[0]} .. ${log.mission.window[1]} s`], ["fin", `${fmt(log.mission.end)} s`], ["aeronaves", (log.aircraft || []).length]])
-		: kv([["misión", "el programa no declara misión"]]);
-	const c = log.constraints;
-	const pairs = [];
-	if (c) {
-		pairs.push(["min_separation", c.minSeparation === null ? "—" : `${c.minSeparation} m`]);
-		pairs.push(["battery_reserve", c.batteryReserve === null ? "—" : `${fmt(c.batteryReserve * 100, 0)} %`]);
+function fact(label, value, note, pass) {
+	return h("div", { class: "fact" }, h("small", {}, label), h("b", {}, value), h("span", { class: pass ? "pass" : null }, note));
+}
+
+function start(model) {
+	$("empty").hidden = true;
+	$("app").hidden = false;
+	const mission = model.mission;
+	const c = model.constraints;
+	$("mission-name").textContent = mission ? mission.name : "Programa sin misión";
+	$("mission-sub").textContent = mission
+		? `Ventana autorizada de ${num(mission.window[0])} s a ${num(mission.window[1])} s · la misión termina a los ${num(mission.end)} s`
+		: "El programa solo contiene declaraciones: no hay trayectorias que analizar.";
+
+	const facts = Murmur.clear($("facts"));
+	if (mission) {
+		facts.append(
+			fact("Duración de la misión", duration(mission.end - mission.window[0]), `de ${duration(mission.window[1] - mission.window[0])} disponibles`),
+			fact("Aeronaves en vuelo", num(model.deployed.length), `de ${num(model.aircraft.length)} declaradas, en ${num(model.fleets.length)} flotas`),
+			fact("Distancia recorrida", `${num(model.totals.distance / 1000, 2)} km`, "suma de todas las aeronaves"));
+		if (model.closest) {
+			facts.append(fact("Menor separación", meters(model.closest.d, 1),
+				c.minSeparation ? `✓ cumple el mínimo de ${meters(c.minSeparation)}` : `${model.closest.a} y ${model.closest.b}`, !!c.minSeparation));
+		}
+		if (model.totals.lowestBattery) {
+			facts.append(fact("Batería más baja al aterrizar", percent(model.totals.lowestBattery.batteryAtEnd, 1),
+				c.batteryReserve ? `✓ cumple la reserva de ${percent(c.batteryReserve)}` : model.totals.lowestBattery.id, !!c.batteryReserve));
+		}
 		for (const req of c.coverage || []) {
-			const ok = req.achieved + 1e-9 >= req.required;
-			pairs.push([`cobertura ${req.zone}`, html(`<span class="${ok ? "ok" : "fail"}">${fmt(req.achieved * 100)}% (≥ ${fmt(req.required * 100, 0)}%)</span>`)]);
+			facts.append(fact(`Cobertura de ${req.zone}`, percent(req.achieved, 1), `✓ cumple el mínimo de ${percent(req.required)}`, true));
 		}
 	}
-	for (const zone of log.zones || []) if (zone.excluded) pairs.push(["excluida", zone.name]);
-	for (const a of log.aircraft || []) if (a.deployed) pairs.push([`batería ${a.id}`, `${fmt(a.batteryAtEnd * 100)} % al aterrizar`]);
-	$("constraints").innerHTML = kv(pairs.length ? pairs : [["—", ""]]);
-}
 
-function tick(now) {
-	if (!state.playing) return;
-	const dt = (now - state.last) / 1000;
-	state.last = now;
-	state.t = Math.min(Number($("time").max), state.t + dt * Number($("speed").value));
-	update();
-	if (state.t >= Number($("time").max)) { state.playing = false; $("play").textContent = "▶"; return; }
-	requestAnimationFrame(tick);
-}
+	const player = new Murmur.Player(model.t0, model.t1);
+	const map = new Murmur.MapView($("map"), model, { route: "tail", tail: 45, footprint: $("opt-foot").checked, labels: $("opt-labels").checked, onSelect: (id) => select(id) });
+	const legend = Murmur.clear($("legend"));
+	const seriesLegend = Murmur.clear($("series-legend"));
+	model.fleets.forEach((fleet, k) => {
+		const color = `var(--fleet-${k % 8 + 1})`;
+		legend.appendChild(h("span", {}, h("i", { class: "mm-key mm-key-dot", style: `background: ${color}` }), `Flota ${fleet.name}`));
+		seriesLegend.appendChild(h("span", {}, h("i", { style: `border-color: ${color}` }), `Flota ${fleet.name} (${fleet.aircraft.length} ${fleet.aircraft.length === 1 ? "aeronave" : "aeronaves"})`));
+	});
+	legend.append(
+		h("span", {}, h("i", { class: "mm-key mm-key-zone" }), "Zona barrida"),
+		h("span", {}, h("i", { class: "mm-key mm-key-ref" }), "Zona de referencia"),
+		h("span", {}, h("i", { class: "mm-key mm-key-excluded" }), "Zona excluida"),
+		h("span", {}, h("i", { class: "mm-key mm-key-station" }), "Estación"));
+	Murmur.clear($("transport")).appendChild(Murmur.transport(player));
+	Murmur.clear($("timeline")).appendChild(Murmur.maneuverPlan(model, player));
 
-$("play").addEventListener("click", () => {
-	state.playing = !state.playing;
-	$("play").textContent = state.playing ? "⏸" : "▶";
-	if (state.playing) {
-		if (state.t >= Number($("time").max)) state.t = Number($("time").min);
-		state.last = performance.now();
-		requestAnimationFrame(tick);
+	for (const chart of charts.splice(0)) chart.destroy();
+	const times = model.frames.map((frame) => frame.t);
+	// Every series on the same time grid: null before the aircraft is deployed.
+	const lines = (key, scale = 1) => model.deployed.map((a) => {
+		const offset = Math.round((a.track.t[0] - model.t0) / (model.log.timeline.dt || 1));
+		return { label: a.id, color: `--fleet-${a.slot}`, values: times.map((t, k) => (k < offset || k - offset >= a.track.t.length ? null : a.track[key][k - offset] * scale)) };
+	});
+	const common = { times, player };
+
+	lineChart($("chart-altitude"), { ...common, series: lines("z"), unit: "m" });
+
+	$("battery-sub").textContent = c.batteryReserve
+		? `Porcentaje de carga. Ninguna línea debe terminar por debajo de la reserva exigida (${percent(c.batteryReserve)}).`
+		: "Porcentaje de carga de cada aeronave. La misión no exige una reserva.";
+	lineChart($("chart-battery"), { ...common, series: lines("battery", 100), unit: "%", yMax: 100,
+		limit: c.batteryReserve ? { value: c.batteryReserve * 100, label: `reserva exigida: ${percent(c.batteryReserve)}` } : null });
+
+	$("separation-sub").textContent = c.minSeparation
+		? `En metros, entre aeronaves en vuelo. La línea nunca debe bajar del mínimo exigido (${meters(c.minSeparation)}). El gráfico se recorta en 8 veces ese mínimo para que se vea el margen.`
+		: "En metros, entre aeronaves en vuelo. La misión no exige una separación mínima.";
+	const cap = c.minSeparation ? c.minSeparation * 8 : Infinity;
+	lineChart($("chart-separation"), { ...common,
+		series: [{ label: "Distancia", color: "--ink", values: model.separation.map((p) => (p.d === null ? null : Math.min(p.d, cap))) }],
+		unit: "m",
+		limit: c.minSeparation ? { value: c.minSeparation, label: `mínimo exigido: ${meters(c.minSeparation)}` } : null,
+		footer: (t) => {
+			const p = model.separation[Math.min(model.separation.length - 1, Math.max(0, Math.round((t - model.t0) / (model.log.timeline.dt || 1))))];
+			return p && p.d !== null ? `Distancia real: ${meters(p.d, 1)}, entre ${p.a} y ${p.b}` : "";
+		} });
+	player.on(() => { for (const chart of charts) chart.draw(); });
+
+	// Choosing an aircraft (on the map or in the table) draws its whole route.
+	function select(id) {
+		map.options.selected = map.options.selected === id ? null : id;
+		const selected = map.options.selected;
+		const note = Murmur.clear($("route-note"));
+		note.hidden = selected === null;
+		if (selected !== null) {
+			note.append(`Recorrido de ${selected}: línea llena, lo ya volado; punteada, lo que falta. Las flechas indican el sentido. `,
+				h("button", { type: "button", onclick: () => select(selected) }, "Volver a ver todas"));
+		}
+		player.emit();
 	}
-});
-$("time").addEventListener("input", (e) => { state.t = Number(e.target.value); update(); });
-$("trails").addEventListener("change", update);
-$("footprints").addEventListener("change", update);
+	$("route-note").hidden = true;
 
-function readFile(file) {
-	const reader = new FileReader();
-	reader.onload = () => { try { load(JSON.parse(reader.result)); } catch (error) { alert("JSON inválido: " + error.message); } };
-	reader.readAsText(file);
+	const stateBody = $("state");
+	player.on((t) => {
+		map.update(t);
+		$("state-title").textContent = `Estado a los ${clock(t)} (t = ${num(t)} s)`;
+		Murmur.clear(stateBody);
+		for (const a of model.aircraft) {
+			const st = a.track ? Murmur.sample(a.track, t) : null;
+			stateBody.appendChild(h("tr", { class: a.track ? "pick" : null, "aria-selected": a.id === map.options.selected ? "true" : null, onclick: a.track ? () => select(a.id) : null },
+				h("td", {}, h("i", { class: "swatch", style: `background: var(--fleet-${a.slot})` }), a.id),
+				h("td", {}, a.fleet),
+				h("td", {}, st ? PHASES[st.phase] || st.phase : a.deployed ? "Sin desplegar" : "No despega"),
+				h("td", { class: "n" }, st ? meters(st.z, 1) : "—"),
+				h("td", { class: "n" }, st ? `${num(st.speed, 1)} m/s` : "—"),
+				h("td", { class: "n" }, st ? percent(st.battery, 1) : "—")));
+		}
+	});
+	$("opt-foot").onchange = (event) => { map.options.footprint = event.target.checked; map.update(player.t); };
+	$("opt-labels").onchange = (event) => { map.options.labels = event.target.checked; map.update(player.t); };
+	player.seek(model.t0);
 }
-$("file").addEventListener("change", (e) => e.target.files[0] && readFile(e.target.files[0]));
-document.addEventListener("dragover", (e) => e.preventDefault());
-document.addEventListener("drop", (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
 
-const src = new URLSearchParams(location.search).get("src");
-if (src && new URL(src, location.href).origin !== location.origin) alert("Solo se admiten planes de vuelo del mismo origen.");
-else if (src) fetch(src).then((r) => r.json()).then(load).catch((error) => alert("No se pudo cargar " + src + ": " + error.message));
+function fail(message) {
+	$("error").hidden = false;
+	$("error").textContent = message;
+}
+
+Murmur.loader({ input: $("file"), onLog: start, onError: fail });
 </script>
 </body>
 </html>

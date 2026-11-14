@@ -1,0 +1,80 @@
+/*
+ * Shared look of the Murmur views: a calm, mostly neutral interface. Color is
+ * reserved for telling the fleets apart (muted hues, validated for color
+ * vision deficiency) and, sparingly, for what is forbidden (excluded zones).
+ */
+:root {
+	color-scheme: light;
+	--page: #f5f5f3;
+	--panel: #ffffff;
+	--soft: #f0f0ed;
+	--line: #e3e2dd;
+	--axis: #c9c8c2;
+	--ink: #23272b;
+	--muted: #6a6f75;
+	--faint: #9a9da1;
+	--accent: #23272b;
+	--accent-ink: #ffffff;
+	--playhead: #23272b;
+	--bar: #d9dadb;
+	--bar-alt: #e9e9e6;
+	--bar-ink: #23272b;
+	--lane: #f5f5f3;
+	--zone: #8a94a0;
+	--excluded: #b0706a;
+	--map-surface: #ffffff;
+	--map-ink: #23272b;
+	--map-muted: #a3a6aa;
+	--map-grid: #f0f0ed;
+	--fleet-1: #3d79b5; --fleet-2: #bd6f4a; --fleet-3: #2c9c86; --fleet-4: #b08f2e;
+	--fleet-5: #9a6aa8; --fleet-6: #6f8f3a; --fleet-7: #5f6b7a; --fleet-8: #a0605a;
+	--lane-name: 104px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* Transport */
+.mm-transport { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mm-play { width: 40px; height: 32px; border: 1px solid var(--ink); border-radius: 6px; background: var(--ink); color: #fff; font-size: 12px; cursor: pointer; }
+.mm-range { flex: 1; min-width: 180px; accent-color: var(--ink); }
+.mm-clock { font-variant-numeric: tabular-nums; min-width: 150px; white-space: pre; color: var(--ink); }
+.mm-rate-label { color: var(--muted); font-size: 13px; }
+.mm-rate { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+
+/* Maneuver plan */
+.mm-steps { display: grid; gap: 1px; }
+.mm-step { display: grid; grid-template-columns: minmax(0, 13.5em) minmax(60px, 1fr) 7.2em; gap: 12px; align-items: center; width: 100%; padding: 6px; border: 0; border-radius: 4px; background: none; color: var(--muted); font: inherit; font-size: 13px; text-align: left; }
+button.mm-step { cursor: pointer; }
+button.mm-step:hover { background: var(--soft); }
+.mm-step-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-step-name b { color: var(--ink); font-weight: 600; }
+.mm-step-time { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mm-step-track { position: relative; display: block; height: 12px; background: var(--lane); border-radius: 3px; }
+.mm-step-bar { position: absolute; top: 0; bottom: 0; min-width: 5px; border-radius: 3px; border: 1.5px solid var(--axis); background: transparent; }
+.mm-step[data-state="done"] .mm-step-bar, .mm-step-bar[data-key="done"] { background: var(--axis); }
+.mm-step[data-state="active"] .mm-step-bar, .mm-step-bar[data-key="active"] { background: var(--ink); border-color: var(--ink); }
+.mm-step[data-state="active"] { color: var(--ink); background: var(--soft); }
+.mm-step-now { position: absolute; top: -7px; bottom: -7px; width: 1.5px; margin-left: -0.75px; background: var(--ink); pointer-events: none; }
+.mm-step-head { color: var(--faint); font-size: 12px; padding-bottom: 2px; }
+.mm-step-axis { color: var(--faint); font-size: 12px; padding-top: 2px; }
+.mm-step-axis .mm-step-track { background: none; height: 16px; }
+.mm-step-axis .mm-step-track span { position: absolute; top: 0; transform: translateX(-50%); font-size: 11px; font-variant-numeric: tabular-nums; }
+.mm-step-axis .mm-step-track span:first-child { transform: none; }
+.mm-step-key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0 6px; color: var(--muted); font-size: 12px; }
+.mm-step-key span { display: inline-flex; align-items: center; gap: 6px; }
+.mm-step-key .mm-step-bar { position: static; display: inline-block; width: 18px; height: 10px; }
+.mm-step-key .mm-step-now { position: static; display: inline-block; height: 14px; margin: 0 8px; }
+
+/* Map */
+.mm-map-item { cursor: pointer; }
+
+/* Map legend */
+.mm-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--muted); align-items: center; }
+.mm-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.mm-key { display: inline-block; width: 18px; height: 12px; flex: none; }
+.mm-key-zone { border: 1.5px solid var(--zone); background: color-mix(in srgb, var(--zone) 10%, transparent); }
+.mm-key-ref { border: 1.5px dashed var(--zone); }
+.mm-key-excluded { border: 1.5px solid var(--excluded); background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--excluded) 55%, transparent) 0 1.5px, transparent 1.5px 5px); }
+.mm-key-station { width: 10px; height: 10px; background: var(--map-ink); transform: rotate(45deg); margin: 0 4px; }
+.mm-key-dot { width: 10px; height: 10px; border-radius: 50%; }
