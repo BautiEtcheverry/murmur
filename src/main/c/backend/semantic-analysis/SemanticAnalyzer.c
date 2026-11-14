@@ -170,7 +170,7 @@ static bool _isFresh(Model * model, const char * name) {
 static void _unresolved(Model * model, const char * name, const char * expected, const char * where) {
 	const char * kind = _kindOfName(model, name);
 	if (kind == NULL) {
-		semanticError("%s: '%s' no fue declarado (se esperaba %s declarado previamente).", where, name, expected);
+		semanticError("%s: '%s' no fue declarado previamente (se esperaba %s).", where, name, expected);
 	}
 	else {
 		semanticError("%s: '%s' es %s, pero se esperaba %s.", where, name, kind, expected);
@@ -670,6 +670,14 @@ static void _analyzeConstraints(Model * model, MissionDef * mission) {
 				Zone * zone = findZone(model, constraint->zoneName);
 				if (zone == NULL) {
 					_unresolved(model, constraint->zoneName, "una zona", "En la restricción 'require coverage'");
+					break;
+				}
+				bool repeated = false;
+				for (int k = 0; k < model->coverageCount; ++k) {
+					if (model->coverage[k].zone == zone) repeated = true;
+				}
+				if (repeated) {
+					semanticError("Se exige cobertura sobre la zona '%s' más de una vez.", zone->name);
 					break;
 				}
 				snprintf(context, sizeof(context), "El umbral de cobertura de la zona '%s'", zone->name);

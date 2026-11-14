@@ -189,7 +189,7 @@ Every magnitude is expressed in SI units (seconds, meters, meters per second, ra
 ## Tests
 
 * `src/test/c/accept`: 27 programs that must be accepted (one per feature of the language).
-* `src/test/c/reject`: 31 programs that must be rejected (lexical, syntactic, semantic and mission-verification errors).
+* `src/test/c/reject`: 32 programs that must be rejected (lexical, syntactic, semantic and mission-verification errors).
 
 ## CI/CD
 

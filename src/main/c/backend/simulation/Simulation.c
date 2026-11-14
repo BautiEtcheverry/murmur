@@ -918,11 +918,15 @@ static void _checkKinematicsAndEnergy(void) {
 					aircraft->id, distance / dt, aircraft->type->maxSpeed, a->t, b->t);
 				speedReported = true;
 			}
-			energy += dt * _phaseFactor(phase) / aircraft->type->endurance;
+			const double rate = _phaseFactor(phase) / aircraft->type->endurance;
+			const double previous = energy;
+			energy += dt * rate;
 			b->energy = energy;
 			if (!batteryReported && 1 < energy) {
+				/* The consumption is linear inside a segment, so the battery runs out before its end. */
+				const double depletion = a->t + (1 - previous) / rate;
 				simulationError("%s agota su batería (endurance %.0f [s]) en t = %.2f [s], antes de completar la misión.",
-					aircraft->id, aircraft->type->endurance, b->t);
+					aircraft->id, aircraft->type->endurance, depletion);
 				batteryReported = true;
 			}
 		}
