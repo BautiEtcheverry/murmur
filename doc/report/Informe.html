@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Murmur - Informe Final</title>
+<style>
+@page { size: A4; margin: 22mm 20mm 22mm 20mm; }
+:root { --ink: #1b1f27; --muted: #5b6475; --rule: #c9ced8; --code-bg: #f5f6f8; }
+* { box-sizing: border-box; }
+html { font-family: "Charter", "Georgia", "Times New Roman", serif; font-size: 10.8pt; color: var(--ink); line-height: 1.42; }
+body { margin: 0; }
+h1, h2, h3, .cover, .toc, figcaption, th, .label { font-family: "Helvetica Neue", "Arial", sans-serif; }
+h1 { font-size: 17pt; margin: 0 0 10pt; break-after: avoid; }
+h2 { font-size: 13pt; margin: 16pt 0 6pt; break-after: avoid; }
+h3 { font-size: 11.5pt; margin: 12pt 0 4pt; break-after: avoid; }
+section.chapter { break-before: page; }
+p { margin: 0; text-indent: 1.5em; text-align: justify; hyphens: auto; }
+p.noindent, h1 + p, h2 + p, h3 + p, figure + p, table + p, ol + p, ul + p { text-indent: 0; }
+ol, ul { margin: 6pt 0 6pt 0; padding-left: 2.2em; }
+li { margin: 2pt 0; text-align: justify; }
+p.intro { margin-bottom: 6pt; }
+code { font-family: "SF Mono", "Menlo", "Consolas", monospace; font-size: 9.2pt; background: var(--code-bg); padding: 0 2pt; border-radius: 2pt; }
+figure { margin: 10pt 0 12pt; break-inside: avoid; }
+figure pre { margin: 0; padding: 8pt 10pt; border: 1px solid var(--rule); border-radius: 3pt; background: var(--code-bg); font-family: "SF Mono", "Menlo", "Consolas", monospace; font-size: 8.6pt; line-height: 1.4; white-space: pre-wrap; counter-reset: line; }
+figure pre span.l { display: block; padding-left: 2.6em; text-indent: -2.6em; }
+figure pre span.l::before { counter-increment: line; content: counter(line, decimal-leading-zero); display: inline-block; width: 2em; margin-right: .6em; color: #9aa1ae; text-align: right; text-indent: 0; }
+.tcap { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 9pt; color: var(--muted); text-align: center; margin: -6pt 0 12pt; }
+.tcap b { color: var(--ink); }
+figcaption { font-size: 9pt; color: var(--muted); margin-top: 4pt; text-align: center; }
+figcaption b { color: var(--ink); }
+table { width: 100%; border-collapse: collapse; margin: 8pt 0 12pt; font-size: 9.5pt; break-inside: auto; }
+th, td { border: 1px solid var(--rule); padding: 3pt 5pt; vertical-align: top; text-align: left; }
+th { background: var(--code-bg); font-weight: 600; font-size: 9pt; }
+tr { break-inside: avoid; }
+.cover { height: 247mm; display: flex; flex-direction: column; justify-content: space-between; }
+.cover .top { color: var(--muted); font-size: 10pt; display: flex; justify-content: space-between; border-bottom: 1px solid var(--rule); padding-bottom: 6pt; }
+.cover .title { margin-top: 60mm; }
+.cover .title h1 { font-size: 30pt; margin: 0; }
+.cover .title .sub { font-size: 14pt; color: var(--muted); margin-top: 6pt; }
+.cover table { font-size: 10pt; }
+.cover .bottom { color: var(--muted); font-size: 10pt; border-top: 1px solid var(--rule); padding-top: 6pt; display: flex; justify-content: space-between; }
+.toc { break-before: page; }
+.toc ol { list-style: none; padding: 0; margin: 0; }
+.toc li { display: flex; align-items: baseline; margin: 3pt 0; text-align: left; }
+.toc li.sub { padding-left: 1.6em; font-size: 10pt; }
+.toc li .name { flex: none; }
+.toc li .dots { flex: 1; border-bottom: 1px dotted #9aa1ae; margin: 0 4pt; transform: translateY(-3pt); }
+.toc li .pg { flex: none; min-width: 1.5em; text-align: right; }
+.toc a { color: inherit; text-decoration: none; }
+.note { font-size: 9.5pt; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="cover">
+	<div class="top"><span>Autómatas, Teoría de Lenguajes y Compiladores</span><span>Ingeniería Informática · ITBA</span></div>
+	<div class="title">
+		<h1>Murmur</h1>
+		<div class="sub">Informe final · Diseño e Implementación de un Lenguaje</div>
+		<div class="sub">Lenguaje para especificar, simular y verificar misiones de enjambres de drones</div>
+	</div>
+	<div>
+		<table>
+			<thead><tr><th>Nombre</th><th>Apellido</th><th>Legajo</th><th>E-mail</th></tr></thead>
+			<tbody>
+				<tr><td>Benicio</td><td>Leite</td><td>64181</td><td>bleite@itba.edu.ar</td></tr>
+				<tr><td>Juan</td><td>Humphreys</td><td>65477</td><td>jhumphreys@itba.edu.ar</td></tr>
+				<tr><td>Bautista</td><td>Etcheverry</td><td>65765</td><td>betcheverry@itba.edu.ar</td></tr>
+			</tbody>
+		</table>
+		<p class="noindent">Repositorio: <code>https://github.com/BautiEtcheverry/murmur</code> (rama <code>development</code>).</p>
+	</div>
+	<div class="bottom"><span>ITBA</span><span>Ciudad Autónoma de Buenos Aires · 14 de noviembre de 2026</span></div>
+</div>
+
+<div class="toc">
+	<h1>Tabla de contenidos</h1>
+	<ol>
+		<li><a href="#s1" class="name">1. Introducción</a><span class="dots"></span><span class="pg" data-find="1. Introducción">?</span></li>
+		<li><a href="#s2" class="name">2. Modelo computacional</a><span class="dots"></span><span class="pg" data-find="2. Modelo computacional">?</span></li>
+		<li class="sub"><a href="#s2-1" class="name">2.1. Dominio</a><span class="dots"></span><span class="pg" data-find="2.1. Dominio">?</span></li>
+		<li class="sub"><a href="#s2-2" class="name">2.2. Lenguaje</a><span class="dots"></span><span class="pg" data-find="2.2. Lenguaje">?</span></li>
+		<li class="sub"><a href="#s2-3" class="name">2.3. Semántica temporal</a><span class="dots"></span><span class="pg" data-find="2.3. Semántica temporal">?</span></li>
+		<li class="sub"><a href="#s2-4" class="name">2.4. Restricciones y verificación</a><span class="dots"></span><span class="pg" data-find="2.4. Restricciones y verificación">?</span></li>
+		<li><a href="#s3" class="name">3. Implementación</a><span class="dots"></span><span class="pg" data-find="3. Implementación">?</span></li>
+		<li class="sub"><a href="#s3-1" class="name">3.1. Frontend</a><span class="dots"></span><span class="pg" data-find="3.1. Frontend">?</span></li>
+		<li class="sub"><a href="#s3-2" class="name">3.2. Backend</a><span class="dots"></span><span class="pg" data-find="3.2. Backend">?</span></li>
+		<li class="sub"><a href="#s3-3" class="name">3.3. Adicionales</a><span class="dots"></span><span class="pg" data-find="3.3. Adicionales">?</span></li>
+		<li class="sub"><a href="#s3-4" class="name">3.4. Dificultades encontradas</a><span class="dots"></span><span class="pg" data-find="3.4. Dificultades encontradas">?</span></li>
+		<li><a href="#s4" class="name">4. Futuras extensiones</a><span class="dots"></span><span class="pg" data-find="4. Futuras extensiones">?</span></li>
+		<li><a href="#s5" class="name">5. Conclusiones</a><span class="dots"></span><span class="pg" data-find="5. Conclusiones">?</span></li>
+		<li><a href="#s6" class="name">6. Referencias</a><span class="dots"></span><span class="pg" data-find="6. Referencias">?</span></li>
+		<li><a href="#s7" class="name">7. Bibliografía</a><span class="dots"></span><span class="pg" data-find="7. Bibliografía">?</span></li>
+		<li><a href="#sA" class="name">Anexo A. Correcciones de entregas anteriores</a><span class="dots"></span><span class="pg" data-find="Anexo A. Correcciones de entregas anteriores">?</span></li>
+	</ol>
+</div>
+
+<section class="chapter" id="s1">
+<h1>1. Introducción</h1>
+<p>Murmur es un lenguaje de dominio específico (DSL) para especificar misiones de enjambres de drones como si fueran código: el programador declara los tipos de aeronave, las flotas, el espacio de vuelo y las maniobras que cada grupo ejecuta a lo largo del tiempo, y el compilador reconstruye las trayectorias, verifica que la misión sea segura y recién entonces emite un plan de vuelo.</p>
+<p>Este documento describe el resultado final del proyecto. La sección 2 presenta el modelo computacional, es decir, el dominio, el lenguaje y su semántica, incorporando las decisiones tomadas a partir de las correcciones de las entregas anteriores. La sección 3 describe la implementación del compilador (<i>frontend</i> y <i>backend</i>), los adicionales desarrollados y las dificultades encontradas. Las secciones 4 y 5 cierran con las extensiones posibles y las conclusiones. Finalmente, el Anexo A resume cómo se resolvió cada una de las correcciones recibidas.</p>
+<p>El compilador está escrito en C sobre el proyecto base <code>Flex-Bison-Compiler</code>, utiliza Flex y Bison para el análisis léxico y sintáctico, y se construye y prueba dentro de un contenedor de Docker. El artefacto de salida es un registro de vuelo en formato JSON, que consume un visualizador independiente escrito en HTML, SVG y JavaScript.</p>
+</section>
+
+<section class="chapter" id="s2">
+<h1>2. Modelo computacional</h1>
+
+<h2 id="s2-1">2.1. Dominio</h2>
+<p>El dominio es la planificación de misiones multi-dron: un conjunto de aeronaves, agrupadas en flotas, que despegan desde estaciones, adoptan formaciones, barren zonas, orbitan puntos de interés y regresan, coordinadas en secuencia o en simultáneo dentro de una ventana temporal.</p>
+<p>El espacio se modela como un plano con eje vertical, y toda magnitud física se expresa con una unidad explícita. Las trayectorias no se resuelven con un modelo cinemático continuo, sino mediante un muestreo temporal discreto: el compilador calcula la posición de cada aeronave en instantes sucesivos, y es sobre ese muestreo que evalúa las restricciones de la misión. Toda la simulación es virtual; no existe conexión con drones reales, ni modelado de viento o perturbaciones. El modelo es suficiente para planificar y validar una misión, pero no para pilotearla.</p>
+<p>El valor del lenguaje está en trasladar la responsabilidad de la seguridad del operador al compilador: un programa que agota la batería de una aeronave, que la acerca demasiado a otra, que la hace atravesar una zona prohibida, que la deja sin enlace o que no logra la cobertura exigida, se rechaza antes de volar.</p>
+
+<h2 id="s2-2">2.2. Lenguaje</h2>
+<p>Un programa de Murmur es una secuencia de declaraciones. Todo identificador debe declararse antes de su uso, y todos comparten un único espacio de nombres (no puede existir, por ejemplo, una zona y una estación con el mismo nombre). El punto y coma al final de cada declaración o sentencia es opcional.</p>
+
+<h3>Magnitudes y unidades</h3>
+<p>Una magnitud es un número seguido de su unidad entre corchetes, por ejemplo <code>18 [m/s]</code>. La unidad se verifica en tiempo de compilación contra la dimensión que espera cada parámetro (la gramática tiene un terminal por dimensión, por lo que <code>max_speed 18 [min]</code> es un error sintáctico), y las unidades de una misma dimensión son intercambiables (<code>1800 [s]</code> equivale a <code>30 [min]</code>). Las dimensiones reconocidas son siete:</p>
+<ol>
+	<li>Tiempo: <code>[s]</code>, <code>[min]</code>.</li>
+	<li>Longitud: <code>[m]</code>, <code>[km]</code>.</li>
+	<li>Velocidad: <code>[m/s]</code>, <code>[km/h]</code>.</li>
+	<li>Aceleración: <code>[m/s^2]</code>.</li>
+	<li>Ángulo: <code>[deg]</code>, <code>[rad]</code>.</li>
+	<li>Resolución de sensores: <code>[px]</code>.</li>
+	<li>Porcentaje: <code>[%]</code>.</li>
+</ol>
+<p>La resolución y el porcentaje son dimensiones distintas, de modo que <code>resolution 95 [%]</code> se rechaza. Las magnitudes físicas no admiten signo negativo. Los puntos del plano son la única excepción a la regla de la unidad explícita: se escriben como pares <code>(x, y)</code>, se interpretan en metros respecto del origen local de la misión y sus coordenadas sí pueden ser negativas. La altitud nunca forma parte del punto, sino que se declara como parámetro de la estación o maniobra que la requiera.</p>
+
+<h3>Aeronaves y flotas</h3>
+<p>Un tipo de dron se declara con la palabra reservada <code>drone</code> y un bloque de campos (Código 1). Los campos <code>endurance</code> y <code>max_speed</code> son obligatorios; <code>max_accel</code>, <code>payload</code> y <code>link_range</code> son opcionales, y su omisión desactiva las verificaciones que dependen de ellos. Sobre los tipos se componen las flotas, que pueden ser heterogéneas.</p>
+<figure>
+<pre><span class="l">drone Quad {</span><span class="l">  endurance 35 [min];</span><span class="l">  max_speed 15 [m/s];</span><span class="l">  max_accel 3 [m/s^2];</span><span class="l">  payload thermal_camera resolution 640 [px] fov 57 [deg];</span><span class="l">  link_range 1000 [m];</span><span class="l">}</span><span class="l">drone FixedWing { endurance 90 [min]; max_speed 25 [m/s]; }</span><span class="l">fleet Alpha = 3 of Quad + 1 of FixedWing;</span></pre>
+<figcaption><b>Código 1.</b> Declaración de dos tipos de dron, uno con todos sus campos y otro solo con los obligatorios, y de una flota heterogénea compuesta por ambos.</figcaption>
+</figure>
+<p>Cada aeronave recibe un identificador estable de la forma <code>Tipo#n</code> (por ejemplo, <code>Quad#3</code>), numerado por tipo en orden de declaración, que es el que aparece en los mensajes de error y en el registro de vuelo. Una subflota se denota con notación de punto: <code>Alpha.Quad</code> son las tres aeronaves de tipo <code>Quad</code> de la flota <code>Alpha</code>. La palabra reservada <code>all</code> denota a todas las aeronaves de todas las flotas declaradas, y puede usarse en cualquier maniobra; recíprocamente, cualquier maniobra (incluido el retorno) admite una flota o una subflota.</p>
+
+<h3>Espacio de vuelo y formaciones</h3>
+<p>Las zonas se declaran como polígonos convexos de al menos tres vértices, o como círculos con centro y radio. Una misma zona cumple el rol de área de trabajo si un barrido la referencia, o de volumen prohibido si el bloque de restricciones la excluye. Las estaciones son puntos con altitud desde los cuales las aeronaves despegan y a los cuales regresan. Las formaciones (línea, grilla o círculo) describen una disposición relativa al centro del grupo que las adopta, y pueden declararse con nombre o directamente en el punto de uso (Código 2).</p>
+<figure>
+<pre><span class="l">zone Campo  = polygon [(0,0), (800,0), (800,500), (0,500)];</span><span class="l">zone Antena = circle at (600, 400) radius 60 [m];</span><span class="l">station Base = point (10, 10) altitude 0 [m];</span><span class="l">formation Peine  = line spacing 30 [m];</span><span class="l">formation Grilla = grid 3 x 2 spacing 15 [m];</span><span class="l">formation Anillo = circle radius 25 [m];</span></pre>
+<figcaption><b>Código 2.</b> Declaración de una zona poligonal, una zona circular, una estación y tres formaciones con nombre.</figcaption>
+</figure>
+<p>La línea y el círculo se adaptan a la cantidad de aeronaves que los adopten, mientras que la grilla fija su cardinalidad: si el grupo que la adopta no tiene exactamente <code>filas × columnas</code> aeronaves, el programa se rechaza. Cuando una subflota adopta una formación, el centro que se toma es el de la propia subflota (el centroide de sus aeronaves), y no el de la flota completa; así, dos subflotas pueden adoptar formaciones distintas en paralelo sin interferirse.</p>
+
+<h3>Misión y maniobras</h3>
+<p>La misión es el único bloque ejecutable y agrupa las maniobras bajo una ventana temporal explícita. Solo se admite una misión por programa, por lo que el bloque de restricciones se ubica dentro de ella, al final de su cuerpo (Código 3). El cuerpo se comporta como una secuencia implícita, y los bloques <code>sequence</code> y <code>parallel</code> permiten componer maniobras explícitamente y anidarse libremente.</p>
+<figure>
+<pre><span class="l">mission Relevamiento window 0 [s] .. 1500 [s] {</span><span class="l">  Alpha takeoff from Base at 0 [s];</span><span class="l">  Alpha morph to Peine over 20 [s];</span><span class="l">  Beta takeoff from Base at 30 [s];</span><span class="l">  parallel {</span><span class="l">    Alpha sweep Campo with lawnmower spacing 40 [m] altitude 60 [m];</span><span class="l">    Beta orbit PDI radius 80 [m] altitude 90 [m] for 600 [s];</span><span class="l">  }</span><span class="l">  all return to Base before 1400 [s];</span><span class="l"></span><span class="l">  constraints {</span><span class="l">    min_separation 20 [m];</span><span class="l">    battery_reserve 20 [%];</span><span class="l">    exclude Antena;</span><span class="l">    require coverage of Campo >= 90 [%];</span><span class="l">  }</span><span class="l">}</span></pre>
+<figcaption><b>Código 3.</b> Misión completa: despegue escalonado, cambio de formación, un barrido y una órbita simultáneos, el retorno de todas las aeronaves y el bloque de restricciones (programa de prueba <code>accept/26-full-mission-staggered</code>).</figcaption>
+</figure>
+<p class="intro">Las maniobras disponibles son siete:</p>
+<ol>
+	<li><code>takeoff from E at T</code>: despega desde la estación <code>E</code> y asciende a la altura de trabajo.</li>
+	<li><code>land at E at T</code>: regresa a la estación <code>E</code> y aterriza.</li>
+	<li><code>morph to F over D</code>: reubica a las aeronaves en la formación <code>F</code>, en línea recta y a velocidad constante.</li>
+	<li><code>sweep Z with P spacing S altitude A</code>: recorre la zona <code>Z</code> según el patrón <code>lawnmower</code> (pasadas paralelas), <code>spiral</code> (anillos concéntricos desde el borde hacia el centro) o <code>perimeter</code> (el borde, repartido entre las aeronaves).</li>
+	<li><code>orbit Z radius R altitude A for D</code>: gira alrededor del centro de la zona <code>Z</code>.</li>
+	<li><code>hold for D</code>: vuelo estacionario en la posición actual.</li>
+	<li><code>return to E before T</code>: regresa y aterriza en <code>E</code> antes del instante límite <code>T</code>.</li>
+</ol>
+
+<h2 id="s2-3">2.3. Semántica temporal</h2>
+<p class="intro">Murmur no tiene condicionales ni bucles: su flujo de control es temporal. Cada maniobra tiene un instante de inicio y una duración, que se determinan de cuatro formas distintas:</p>
+<ol>
+	<li><b>Instante absoluto</b> (cláusula <code>at</code>): en <code>takeoff</code> es el instante en que las aeronaves dejan el suelo; en <code>land</code> es el instante en que tocan tierra, y el compilador calcula hacia atrás cuándo debe comenzar la aproximación. Si ese inicio es anterior al fin de la maniobra previa, el programa se rechaza.</li>
+	<li><b>Duración declarada</b> (cláusulas <code>over</code> y <code>for</code>): <code>morph</code>, <code>orbit</code> y <code>hold</code> comienzan cuando termina la sentencia anterior y duran lo indicado (en <code>orbit</code>, se suma el tránsito hasta la circunferencia).</li>
+	<li><b>Fecha límite</b> (cláusula <code>before</code>): <code>return</code> comienza cuando termina la sentencia anterior, su duración la calcula el compilador, y debe haber terminado antes del instante indicado. No fija el inicio ni declara la duración: es una cota contra la cual se verifica el plan.</li>
+	<li><b>Duración calculada</b>: <code>sweep</code> no declara inicio ni duración; el compilador la obtiene del largo del recorrido que genera el patrón y de la velocidad de operación de cada aeronave.</li>
+</ol>
+<p>Un bloque <code>sequence</code> encadena sus sentencias; un bloque <code>parallel</code> las inicia en el mismo instante y termina cuando concluye la más larga. Una misma aeronave no puede aparecer en dos sentencias de un mismo bloque paralelo: <code>Bravo</code> y <code>Bravo.Scout</code> entran en conflicto, mientras que <code>Bravo.Scout</code> y <code>Bravo.Thermal</code> no. Toda maniobra debe terminar dentro de la ventana de la misión, y toda aeronave desplegada debe haber aterrizado al finalizarla.</p>
+
+<h2 id="s2-4">2.4. Restricciones y verificación</h2>
+<p>El bloque <code>constraints</code> es la única construcción que no describe qué hace la flota, sino qué debe cumplirse. Todas sus cláusulas son opcionales, <code>exclude</code> puede repetirse, y las demás pueden aparecer a lo sumo una vez. La Tabla 1 resume qué verifica el compilador en cada nivel.</p>
+<table>
+	<thead><tr><th style="width:22%">Nivel</th><th>Verificaciones</th></tr></thead>
+	<tbody>
+		<tr><td>Sintácticas</td><td>Dimensión de cada magnitud (un terminal por dimensión), magnitudes sin signo negativo, polígonos de al menos tres vértices.</td></tr>
+		<tr><td>Sobre el AST</td><td>Declaración previa al uso y tipo de entidad correcto; identificadores únicos; campos obligatorios y no repetidos; valores positivos y en rango; polígonos convexos; duraciones que no superan la ventana; cardinalidad de las grillas; subflotas existentes; instantes <code>at</code> y <code>before</code> dentro de la ventana; ausencia de maniobras simultáneas sobre una misma aeronave en un bloque paralelo; una única misión.</td></tr>
+		<tr><td>Sobre la simulación</td><td>Orden temporal de las maniobras (despegue previo, inicio absoluto no superpuesto); fin de cada maniobra dentro de la ventana; fecha límite de <code>return</code>; aterrizaje de toda aeronave al finalizar.</td></tr>
+		<tr><td>Sobre las trayectorias</td><td>Velocidad máxima en cada tramo; aceleración máxima en los cambios de formación; separación mínima entre todo par de aeronaves en vuelo; ingreso a zonas excluidas; alcance de enlace respecto de la estación más cercana.</td></tr>
+		<tr><td>Energía y cobertura</td><td>Consumo integrado por fase de vuelo, sin agotar la autonomía y aterrizando con la reserva exigida; porcentaje observado de cada zona barrida, descontando las zonas excluidas, contra el umbral exigido.</td></tr>
+	</tbody>
+</table>
+<div class="tcap"><b>Tabla 1.</b> Verificaciones que realiza el compilador, agrupadas por nivel.</div>
+<p>Cuando una verificación depende de un campo opcional que el tipo de dron no declara, la política es explícita. Una aeronave sin <code>link_range</code> no se verifica contra la estación, y una sin <code>max_accel</code> no se verifica en aceleración. La separación mínima solo necesita las posiciones, por lo que se aplica siempre a todas las aeronaves. En cambio, si se exige <code>require coverage of Z</code> y ninguna de las aeronaves que barren la zona declara <code>payload</code>, el programa se rechaza, porque la restricción sería imposible de satisfacer; las aeronaves sin sensor que sí barren la zona simplemente no aportan cobertura. También se rechaza exigir cobertura sobre una zona que ninguna maniobra barre, o barrer una zona excluida.</p>
+</section>
+
+<section class="chapter" id="s3">
+<h1>3. Implementación</h1>
+<p class="intro">El compilador se organiza como una cadena de cinco fases, cada una en su propio módulo, que se comunican a través del AST y de un modelo semántico (<code>Model</code>):</p>
+<ol>
+	<li>Análisis léxico (<code>frontend/lexical-analysis</code>).</li>
+	<li>Análisis sintáctico y construcción del AST (<code>frontend/syntactic-analysis</code>).</li>
+	<li>Análisis semántico (<code>backend/semantic-analysis</code>).</li>
+	<li>Simulación y verificación de la misión (<code>backend/simulation</code>).</li>
+	<li>Generación de código (<code>backend/code-generation</code>).</li>
+</ol>
+<p>Si cualquier fase falla, la compilación se aborta con estado de salida <code>1</code> y los errores se informan por la salida de error estándar. El programa se lee de la entrada estándar y el registro de vuelo se escribe en la ruta indicada como argumento (por defecto, <code>out/&lt;misión&gt;.json</code>).</p>
+
+<h2 id="s3-1">3.1. Frontend</h2>
+<p>El analizador léxico, escrito en Flex [5], define el alfabeto: 51 palabras reservadas (incluida <code>x</code>, que separa las dimensiones de una grilla), las once unidades como <i>tokens</i> atómicos clasificados en siete terminales según su dimensión (de modo que <code>[weeks]</code> o <code>[m/s^3]</code> se rechazan en esta fase), literales enteros y decimales, identificadores, puntuación, comentarios de línea y comentarios multilínea en un contexto exclusivo, para detectar los que no se cierran. Cualquier carácter fuera del alfabeto produce un error léxico que indica el carácter y la línea, y los errores sintácticos informan la línea, el <i>token</i> inesperado y los esperados.</p>
+<p>El analizador sintáctico, escrito en Bison [2] en modo <i>push</i> y reentrante, define los no terminales, las producciones y el símbolo inicial (Código 4). Siguiendo la organización clásica de un compilador en fases [1], la gramática no presenta conflictos <i>shift/reduce</i> ni <i>reduce/reduce</i>. El punto y coma opcional se resolvió con un no terminal <code>optSemi</code> que admite la cadena vacía. Cada parámetro físico usa el no terminal de su dimensión (<code>timeQuantity</code>, <code>lengthQuantity</code>, etc.), el signo menos solo se admite en las coordenadas de un punto, y la lista de vértices de un polígono exige al menos tres puntos. La palabra <code>all</code> es una alternativa del no terminal <code>fleetRef</code>, por lo que se comporta como cualquier otra referencia a flota. Cada acción semántica construye un nodo del AST, y las directivas <code>%destructor</code> liberan los fragmentos parciales cuando el análisis falla.</p>
+<figure>
+<pre><span class="l">program     : declarationList ;</span><span class="l">declaration : droneDeclaration optSemi</span><span class="l">            | fleetDeclaration optSemi</span><span class="l">            | zoneDeclaration optSemi</span><span class="l">            | stationDeclaration optSemi</span><span class="l">            | formationDeclaration optSemi</span><span class="l">            | missionDeclaration optSemi ;</span><span class="l">fleetRef    : ALL | IDENTIFIER | IDENTIFIER DOT IDENTIFIER ;</span><span class="l">missionDeclaration</span><span class="l">            : MISSION IDENTIFIER WINDOW quantity DOTDOT quantity</span><span class="l">              OPEN_BRACE statementList optionalConstraints CLOSE_BRACE ;</span><span class="l">statement   : takeoffStmt | landStmt | morphStmt | sweepStmt | orbitStmt</span><span class="l">            | holdStmt | returnStmt | parallelBlock | sequenceBlock ;</span><span class="l">returnStmt  : fleetRef RETURN TO IDENTIFIER BEFORE quantity ;</span><span class="l">timeQuantity: number TIME_UNIT ;</span><span class="l">coordinate  : number | MINUS number ;</span></pre>
+<figcaption><b>Código 4.</b> Extracto de las producciones de la gramática (archivo <code>BisonGrammar.y</code>), sin las acciones semánticas.</figcaption>
+</figure>
+
+<h2 id="s3-2">3.2. Backend</h2>
+
+<h3>Análisis semántico</h3>
+<p>El analizador semántico recorre las declaraciones en orden y construye el modelo: las tablas de símbolos de tipos de dron, flotas, zonas, estaciones y formaciones, y el arreglo de aeronaves con sus identificadores estables. Recorrer en orden garantiza la regla de declaración previa al uso, ya que cada búsqueda solo ve lo declarado hasta ese momento. Durante la construcción, cada magnitud se convierte a unidades del SI (y se vuelve a verificar su dimensión como defensa, aunque la gramática ya la garantiza), y los círculos se aproximan con un polígono de 48 lados para unificar los algoritmos geométricos.</p>
+<p>La convexidad se verifica con el signo del producto cruz en cada vértice y con el giro total del contorno, que debe ser de una vuelta (así se descartan los polígonos estrellados). Para los bloques paralelos, cada rama calcula el conjunto de aeronaves que comanda (recursivamente, ya que los bloques se anidan), y se verifica que los conjuntos sean disjuntos. Los errores no detienen el análisis: se informan todos los encontrados, con el nombre de la entidad y el motivo (Código 5).</p>
+<figure>
+<pre><span class="l">[ERROR][SemanticAnalyzer] En la flota 'Alpha': 'Ghost' no fue declarado (se esperaba un tipo de dron declarado previamente).</span><span class="l">[ERROR][BisonActions] Line 6: syntax error, unexpected PERCENTAGE_UNIT, expecting RESOLUTION_UNIT.</span><span class="l">[ERROR][Simulation] Scout#1 y Scout#2 están a 7.98 [m] en t = 21.50 [s], por debajo de la separación mínima de 8.00 [m].</span><span class="l">[ERROR][Simulation] Tiny#1 agota su batería (endurance 180 [s]) en t = 310.00 [s], antes de completar la misión.</span></pre>
+<figcaption><b>Código 5.</b> Mensajes de error de los casos de rechazo 12, 10, 17 y 19: indican la entidad o aeronave, el instante y la magnitud de la violación.</figcaption>
+</figure>
+
+<h3>Simulación y verificación</h3>
+<p>La simulación ejecuta la misión sobre el modelo y produce, para cada aeronave, una lista de <i>keyframes</i> (instante, posición tridimensional y si está en vuelo); la posición en un instante cualquiera se obtiene por interpolación lineal. Cada maniobra se traduce en <i>keyframes</i> según los parámetros de la Tabla 2, que son constantes del compilador.</p>
+<table>
+	<thead><tr><th style="width:38%">Parámetro</th><th>Valor</th></tr></thead>
+	<tbody>
+		<tr><td>Altura de trabajo tras el despegue</td><td>30 m sobre la estación</td></tr>
+		<tr><td>Velocidad de ascenso / descenso</td><td>3 m/s / 2 m/s</td></tr>
+		<tr><td>Velocidad de tránsito y de barrido</td><td>80 % de <code>max_speed</code> de cada aeronave</td></tr>
+		<tr><td>Velocidad de órbita</td><td>50 % de la menor <code>max_speed</code> del grupo</td></tr>
+		<tr><td>Separación entre posiciones en tierra</td><td>máx(10 m, 1,5 × <code>min_separation</code>)</td></tr>
+		<tr><td>Margen alrededor de zonas excluidas</td><td>5 m</td></tr>
+		<tr><td>Período de muestreo de las verificaciones</td><td>0,5 s (1 s en el registro de vuelo)</td></tr>
+		<tr><td>Consumo relativo por fase</td><td>ascenso 1,6; tránsito 1,0; estacionario 1,2; descenso 0,8</td></tr>
+	</tbody>
+</table>
+<div class="tcap"><b>Tabla 2.</b> Parámetros del modelo cinemático y energético de la simulación.</div>
+<p>El patrón <code>lawnmower</code> interseca rectas horizontales separadas por el espaciado con el polígono convexo, y reparte las pasadas resultantes en bloques contiguos, una porción por aeronave. Cuando una pasada atraviesa una zona excluida, la aeronave la interrumpe en el borde del rectángulo que la contiene (más el margen), la contornea por el lado más cercano y la retoma del otro lado. El patrón <code>spiral</code> genera anillos concéntricos escalando el polígono hacia su centroide, y <code>perimeter</code> divide el borde en arcos de igual longitud. Todos los tránsitos (hacia el inicio de un patrón, hacia una órbita o hacia una estación) también rodean las zonas excluidas: cada tramo se recorta contra los rectángulos de exclusión con el algoritmo de Liang–Barsky [4], y si los atraviesa se desvía por las esquinas del lado más corto.</p>
+<p>La aceleración se verifica en los cambios de formación con un perfil de aceleración y frenado máximos: recorrer una distancia <i>d</i> en un tiempo <i>D</i> exige <i>a</i> = 4<i>d</i>/<i>D</i>². El consumo energético se integra tramo a tramo como <i>dt</i> × factor de la fase / <code>endurance</code>, donde la fase (ascenso, tránsito, estacionario o descenso) se deduce de la velocidad vertical y horizontal de cada tramo. La cobertura se calcula sobre una grilla de 160 celdas en el lado mayor de la zona: en cada muestra, una aeronave con sensor observa el círculo de radio <i>z</i> · tan(<code>fov</code>/2), y el porcentaje final descuenta las celdas que caen dentro de zonas excluidas.</p>
+
+<h3>Generación de código y runtime</h3>
+<p>Siguiendo la sugerencia de la corrección de la primera entrega, el único artefacto que genera el compilador es un registro de vuelo en JSON (Código 6), con un formato fijado de antemano: las declaraciones resueltas a unidades del SI, las fases de la misión, el reporte de energía y cobertura, y la posición, fase y batería de cada aeronave en cada segundo. El <i>runtime</i> es un visualizador estático (<code>src/main/visualizer/index.html</code>), sin dependencias, que consume ese archivo. Como el visualizador solo depende del formato, ambas partes pudieron desarrollarse y probarse por separado.</p>
+<figure>
+<pre><span class="l">{</span><span class="l">  "format": "murmur-flight-log", "version": 1,</span><span class="l">  "mission": {"name": "Relevamiento", "window": [0, 1500], "end": 889.623},</span><span class="l">  "constraints": {"minSeparation": 20, "batteryReserve": 0.2,</span><span class="l">                  "coverage": [{"zone": "Campo", "required": 0.9, "achieved": 0.99}]},</span><span class="l">  "phases": [{"label": "Alpha takeoff Base", "maneuver": "takeoff", "start": 0, "end": 10}, ...],</span><span class="l">  "timeline": {"dt": 1, "frames": [</span><span class="l">    {"t": 5, "drones": [{"id": "Quad#1", "x": -65, "y": 10, "z": 15, "phase": "climb", "battery": 0.996}, ...]},</span><span class="l">    ...]}</span><span class="l">}</span></pre>
+<figcaption><b>Código 6.</b> Extracto del registro de vuelo generado para el Código 3. Las claves omitidas (tipos, flotas, zonas, estaciones y aeronaves) se documentan en el README.</figcaption>
+</figure>
+
+<h3>Pruebas</h3>
+<p>La suite contiene 27 programas de aceptación (uno por cada característica del lenguaje, incluidos los diecinueve casos de la especificación) y 31 de rechazo, que cubren errores léxicos, sintácticos, semánticos y de verificación de la misión, incluidos los dieciséis casos de rechazo de la especificación. El <i>script</i> <code>test.sh</code> del proyecto base los ejecuta todos, y el compilador se construye con AddressSanitizer, por lo que cualquier acceso inválido o pérdida de memoria hace fallar la prueba correspondiente.</p>
+
+<h2 id="s3-3">3.3. Adicionales</h2>
+<p class="intro">Además de lo requerido, se implementaron tres prestaciones que surgieron al probar misiones reales con el simulador:</p>
+<ol>
+	<li><b>Visualizador interactivo:</b> dibuja las zonas (las excluidas, rayadas), las estaciones, la traza de cada aeronave coloreada por flota, la huella del sensor, un diagrama de Gantt de las fases y el estado de cada aeronave, con controles de reproducción y una barra de tiempo.</li>
+	<li><b>Asignación sin cruces:</b> al adoptar una formación, iniciar un barrido u orbitar, cada aeronave se asigna a una posición destino resolviendo el problema de asignación [3], es decir, minimizando la distancia total recorrida (por búsqueda exhaustiva en grupos de hasta ocho aeronaves, y de forma voraz en grupos mayores). La asignación de costo mínimo garantiza que dos trayectorias rectas no se crucen.</li>
+	<li><b>Tránsitos deconflictuados:</b> en los tránsitos grupales, cada aeronave asciende primero a su propio nivel (la altitud destino más un escalón proporcional a la separación mínima), viaja horizontalmente, espera a que llegue todo el grupo, y recién entonces todas descienden en simultáneo sobre columnas verticales separadas.</li>
+</ol>
+
+<h2 id="s3-4">3.4. Dificultades encontradas</h2>
+<p>La mayor dificultad fue que el simulador resultó más estricto que nuestra intuición. Al principio, casi todas las misiones de ejemplo se rechazaban por violar la separación mínima: aeronaves de dos flotas estacionadas en las mismas posiciones de una base, trayectorias que se cruzaban al dirigirse al inicio de un barrido, o aterrizajes que descendían sobre la ruta de otra aeronave. En lugar de relajar las verificaciones, se mejoró el planificador con las posiciones en tierra únicas por aeronave, la asignación sin cruces y los tránsitos por niveles descriptos en la sección anterior.</p>
+<p>La semántica de <code>land ... at T</code> también requirió una decisión. Interpretarlo como el inicio del aterrizaje hacía que programas razonables, como aterrizar a los 850 s en una ventana de 900 s, se rechazaran porque la aproximación desde la otra punta de la zona tardaba más de lo previsto. Se optó por interpretarlo como el instante de contacto con el suelo, y calcular la aproximación hacia atrás, lo que además justifica la distinción con <code>before</code> que señaló la corrección.</p>
+<p>Por último, el manejo de memoria en C exigió cuidado: el AST se libera con destructores propios, las listas de <i>keyframes</i> crecen dinámicamente, y los bloques paralelos anidados obligaron a reservar los conjuntos de aeronaves por llamada en lugar de usar memoria estática. Compilar con AddressSanitizer permitió detectar estos problemas en las propias pruebas.</p>
+</section>
+
+<section class="chapter" id="s4">
+<h1>4. Futuras extensiones</h1>
+<p class="intro">Las extensiones que consideramos más valiosas son las siguientes:</p>
+<ol>
+	<li><b>Maniobras definidas por el usuario.</b> Hoy cada maniobra y cada patrón de barrido es una palabra reservada, y agregar uno nuevo implica modificar el lenguaje. Siguiendo la sugerencia de la corrección, el próximo paso es reducir el núcleo a primitivas (por ejemplo, <code>goto</code>, <code>hold</code> y <code>climb</code>) y permitir declarar procedimientos parametrizados, como <code>maneuver Lawnmower(zone Z, length S) { ... }</code>, que luego se invocan por nombre. Los patrones actuales pasarían a ser una biblioteca estándar escrita en el propio lenguaje.</li>
+	<li><b>Reporte documental.</b> Generar, a partir del mismo registro de vuelo, un reporte en LaTeX con el diagrama de fases, la tabla de consumo por aeronave y la cobertura por zona, que quedó como deseable.</li>
+	<li><b>Polígonos cóncavos.</b> Descomponerlos en regiones convexas para poder barrerlos, y contornear las exclusiones siguiendo su forma real en lugar del rectángulo que las contiene.</li>
+	<li><b>Modelo físico más rico.</b> Viento, perfiles de velocidad con aceleración en todos los tramos, y un modelo de consumo calibrado por tipo de aeronave.</li>
+	<li><b>Varias misiones y zonas autorizadas.</b> Admitir varias misiones independientes por programa, y una cláusula que restrinja el vuelo a una zona autorizada.</li>
+</ol>
+</section>
+
+<section class="chapter" id="s5">
+<h1>5. Conclusiones</h1>
+<p>Se implementó un compilador completo para Murmur: el <i>frontend</i> reconoce la sintaxis final del lenguaje y construye el AST, y el <i>backend</i> lo valida semánticamente, simula la misión, verifica la totalidad de las restricciones planteadas en la especificación y genera un registro de vuelo que un visualizador independiente reproduce. Las 58 pruebas de la suite se comportan como se espera.</p>
+<p>El trabajo confirmó la idea que motivó el lenguaje: al declarar la misión en lugar de calcularla, los errores de planificación (una batería que no alcanza, dos aeronaves que se cruzan, una antena que se atraviesa) aparecen en tiempo de compilación, con un mensaje que indica la aeronave, el instante y la magnitud de la violación. Las correcciones de las entregas anteriores mejoraron el diseño de forma concreta: separar las dimensiones, darle a <code>all</code> el tipo de una flota, distinguir la fecha límite como categoría temporal propia y desacoplar el compilador del visualizador mediante el formato JSON simplificaron tanto el lenguaje como su implementación.</p>
+</section>
+
+<section class="chapter" id="s6">
+<h1>6. Referencias</h1>
+<ol>
+	<li>Aho, A. V., Lam, M. S., Sethi, R. y Ullman, J. D. (2006). <i>Compilers: Principles, Techniques, and Tools</i> (2.ª ed.). Addison-Wesley.</li>
+	<li>Free Software Foundation (2021). <i>GNU Bison Manual</i>, versión 3.8. https://www.gnu.org/software/bison/manual/</li>
+	<li>Kuhn, H. W. (1955). The Hungarian method for the assignment problem. <i>Naval Research Logistics Quarterly</i>, 2(1–2), 83–97.</li>
+	<li>Liang, Y.-D. y Barsky, B. A. (1984). A new concept and method for line clipping. <i>ACM Transactions on Graphics</i>, 3(1), 1–22.</li>
+	<li>Paxson, V. et al. (2017). <i>Lexical Analysis With Flex</i>, versión 2.6. https://westes.github.io/flex/manual/</li>
+</ol>
+</section>
+
+<section class="chapter" id="s7">
+<h1>7. Bibliografía</h1>
+<ol>
+	<li>Cátedra de Autómatas, Teoría de Lenguajes y Compiladores, ITBA. Documentos <i>Análisis Léxico</i> (v1.0.0), <i>Análisis Sintáctico</i> (v0.1.0), <i>Análisis Semántico</i> (v0.2.0), <i>Generación de Código</i> (v0.1.0) y <i>Runtime</i> (v0.1.0).</li>
+	<li>Golmar, A. <i>Flex-Bison-Compiler</i>. https://github.com/Alpha-Theta-Gamma-Mu/Flex-Bison-Compiler</li>
+	<li>Levine, J. (2009). <i>flex &amp; bison</i>. O'Reilly Media.</li>
+	<li>ECMA International (2017). <i>ECMA-404: The JSON Data Interchange Syntax</i> (2.ª ed.).</li>
+	<li>W3C (2018). <i>Scalable Vector Graphics (SVG) 2</i>. https://www.w3.org/TR/SVG2/</li>
+	<li>Galceran, E. y Carreras, M. (2013). A survey on coverage path planning for robotics. <i>Robotics and Autonomous Systems</i>, 61(12), 1258–1276.</li>
+</ol>
+</section>
+
+<section class="chapter" id="sA">
+<h1>Anexo A. Correcciones de entregas anteriores</h1>
+<p class="noindent">La Tabla 3 resume cómo se resolvió cada observación recibida sobre la especificación (Stage I) y el <i>frontend</i> (Stage II).</p>
+<table>
+	<thead><tr><th style="width:4%">#</th><th style="width:40%">Observación</th><th>Resolución</th></tr></thead>
+	<tbody>
+		<tr><td>0</td><td>La licencia no tiene los nombres del equipo.</td><td><code>LICENSE.md</code> indica los tres integrantes.</td></tr>
+		<tr><td>1</td><td>El README apunta al repositorio original.</td><td>Las medallas y los enlaces apuntan a <code>BautiEtcheverry/murmur</code>; el proyecto base solo se menciona como origen.</td></tr>
+		<tr><td>2–6</td><td>Tabla de contenidos, numeración y leyenda de códigos, tipografía, recuadros y márgenes, listas numeradas.</td><td>Este informe tiene una tabla de contenidos con subsecciones y páginas correctas; todos los códigos están numerados, con leyenda, recuadro, fuente monoespaciada, numeración de líneas y el mismo margen; las secuencias se redactan como listas numeradas.</td></tr>
+		<tr><td>7, 15</td><td>Ortografía, uso de mayúsculas, comas, espacios dobles, «sub flota» y «subflotas»; sangría y espaciado.</td><td>Se revisó la redacción; se usa siempre «subflota», sangría en cada párrafo y sin espacio entre párrafos.</td></tr>
+		<tr><td>8</td><td>La cláusula <code>before</code> no encaja en las tres formas de fijar inicio y duración.</td><td>Se definen cuatro categorías temporales (sección 2.3); <code>before</code> es una fecha límite.</td></tr>
+		<tr><td>9</td><td><code>all</code> no está definido.</td><td><code>all</code> es una palabra reservada y una alternativa de <code>fleetRef</code>: denota todas las aeronaves de todas las flotas. Toda maniobra acepta una flota, una subflota o <code>all</code> (pruebas <code>accept/16</code> y <code>accept/19</code>).</td></tr>
+		<tr><td>10</td><td>Restricciones que dependen de campos opcionales omitidos.</td><td>Política explícita (sección 2.4): exigir cobertura sin ningún sensor se rechaza (<code>reject/21</code>); <code>min_separation</code> solo necesita posiciones.</td></tr>
+		<tr><td>11</td><td><code>[%]</code> y <code>[px]</code> en la misma dimensión.</td><td>Son dimensiones distintas, con terminales distintos en la gramática (<code>reject/10</code>).</td></tr>
+		<tr><td>12</td><td>Centro de una formación adoptada por una subflota.</td><td>Es el centroide del grupo comandado (la subflota).</td></tr>
+		<tr><td>13</td><td>El punto y coma reduce la DX.</td><td>Es opcional (<code>accept/20</code>).</td></tr>
+		<tr><td>14</td><td>Reemplazar <code>center</code> por <code>at</code>.</td><td><code>circle at (x, y) radius r</code>.</td></tr>
+		<tr><td>16</td><td>Usar <code>drone</code> en lugar de <code>drone_type</code>.</td><td>La palabra reservada es <code>drone</code>.</td></tr>
+		<tr><td>17</td><td>Priorizar el JSON como registro crudo y un visualizador independiente; LaTeX como deseable.</td><td>El compilador genera solo el JSON con la posición de cada aeronave en cada instante, y el visualizador HTML + SVG + JS lo consume. El reporte LaTeX queda como extensión futura.</td></tr>
+		<tr><td>18</td><td>Con una sola misión, ubicar las restricciones dentro de ella.</td><td>Solo se admite una misión (<code>reject/24</code>), y <code>constraints</code> se declara dentro de su cuerpo.</td></tr>
+		<tr><td>19</td><td>Reemplazar las maniobras predefinidas por procedimientos reutilizables.</td><td>Se analizó y se dejó como la primera extensión futura (sección 4), por su impacto en la gramática y en el modelo de simulación.</td></tr>
+	</tbody>
+</table>
+<div class="tcap"><b>Tabla 3.</b> Observaciones recibidas en las entregas anteriores y su resolución.</div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+// The return cannot be completed before its deadline.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+zone AOI = polygon [(0,0), (1000,0), (1000,800), (0,800)];
+mission Overdue window 0 [s] .. 3000 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha sweep AOI with lawnmower spacing 25 [m] altitude 60 [m];
+  Alpha return to Base before 300 [s];
+}

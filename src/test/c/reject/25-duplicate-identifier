@@ -1,0 +1,3 @@
+// An identifier cannot be declared twice (here, as a zone and as a station).
+zone Base = circle at (0, 0) radius 10 [m];
+station Base = point (0, 0) altitude 0 [m];

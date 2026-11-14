@@ -1,0 +1,3 @@
+// Spec reject (VII): a fleet composed from a drone type that was never declared.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout + 1 of Ghost;

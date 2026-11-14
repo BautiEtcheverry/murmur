@@ -34,6 +34,11 @@ if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	# The header files (*.h extension), are automatically included from the source-codes.
 	add_executable(Murmur-Compiler
 		src/main/c/EntryPoint.c
+		src/main/c/backend/code-generation/Generator.c
+		src/main/c/backend/domain/Geometry.c
+		src/main/c/backend/domain/Model.c
+		src/main/c/backend/semantic-analysis/SemanticAnalyzer.c
+		src/main/c/backend/simulation/Simulation.c
 		src/main/c/frontend/Frontend.c
 		src/main/c/frontend/lexical-analysis/FlexActions.c
 		src/main/c/frontend/lexical-analysis/FlexScanner.c
@@ -46,7 +51,7 @@ if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	)
 
 	# Link final project and libraries.
-	target_link_libraries(Murmur-Compiler)
+	target_link_libraries(Murmur-Compiler m)
 else ()
 	message(NOTICE "The C compiler is unknown.")
 endif ()

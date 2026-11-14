@@ -1,0 +1,14 @@
+// Units of the same dimension are interchangeable: [min] and [s], [km] and
+// [m], [km/h] and [m/s], [rad] and [deg].
+drone Scout {
+  endurance 5 [min];
+  max_speed 54 [km/h];
+  payload rgb_camera resolution 1920 [px] fov 1.2 [rad];
+  link_range 1.5 [km];
+}
+fleet Alpha = 1 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+mission Units window 0 [min] .. 1 [min] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha land at Base at 0.75 [min];
+}

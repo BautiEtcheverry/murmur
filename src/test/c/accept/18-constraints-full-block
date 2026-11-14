@@ -1,5 +1,9 @@
 // Spec test (XIX): full constraints block attached to a mission.
-drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+drone Scout {
+  endurance 25 [min];
+  max_speed 18 [m/s];
+  payload rgb_camera resolution 4000 [px] fov 84 [deg];
+}
 fleet Alpha = 2 of Scout;
 zone AOI  = polygon [(0,0), (100,0), (100,100), (0,100)];
 zone Antena = circle at (50, 50) radius 10 [m];

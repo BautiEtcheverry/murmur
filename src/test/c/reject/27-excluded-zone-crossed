@@ -1,0 +1,13 @@
+// The orbit (radius 20 [m]) lies inside an excluded zone (radius 40 [m]).
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+zone LKP = circle at (200, 180) radius 40 [m];
+mission Forbidden window 0 [s] .. 600 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha orbit LKP radius 20 [m] altitude 60 [m] for 60 [s];
+  Alpha land at Base at 590 [s];
+  constraints {
+    exclude LKP;
+  }
+}

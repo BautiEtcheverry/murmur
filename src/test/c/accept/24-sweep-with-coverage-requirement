@@ -1,0 +1,21 @@
+// Spec test (XVII): a sweep over a zone that contains an excluded zone; the
+// lawnmower passes contour the exclusion instead of crossing it.
+drone Scout {
+  endurance 30 [min];
+  max_speed 15 [m/s];
+  payload rgb_camera resolution 4000 [px] fov 84 [deg];
+}
+fleet Alpha = 3 of Scout;
+zone Campo  = polygon [(0,0), (600,0), (600,400), (0,400)];
+zone Antena = circle at (300, 200) radius 50 [m];
+station Base = point (10, 10) altitude 0 [m];
+mission Contour window 0 [s] .. 20 [min] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha sweep Campo with lawnmower spacing 40 [m] altitude 60 [m];
+  Alpha return to Base before 1150 [s];
+  constraints {
+    min_separation 10 [m];
+    exclude Antena;
+    require coverage of Campo >= 90 [%];
+  }
+}

@@ -1,0 +1,16 @@
+// The other two sweep patterns: spiral (from the border to the center) and
+// perimeter (following the border), executed by two sub-fleets in parallel.
+drone Quad      { endurance 35 [min]; max_speed 15 [m/s]; payload thermal_camera resolution 640 [px] fov 57 [deg]; }
+drone FixedWing { endurance 90 [min]; max_speed 25 [m/s]; payload rgb_camera resolution 4000 [px] fov 70 [deg]; }
+fleet Mixed = 2 of Quad + 1 of FixedWing;
+zone Lote  = circle at (300, 300) radius 150 [m];
+zone Traza = polygon [(600,0), (900,0), (750,250)];
+station Base = point (400, 0) altitude 0 [m];
+mission Patterns window 0 [s] .. 30 [min] {
+  Mixed takeoff from Base at 0 [s];
+  parallel {
+    Mixed.Quad sweep Lote with spiral spacing 60 [m] altitude 100 [m];
+    Mixed.FixedWing sweep Traza with perimeter spacing 10 [m] altitude 35 [m];
+  }
+  Mixed land at Base at 25 [min];
+}

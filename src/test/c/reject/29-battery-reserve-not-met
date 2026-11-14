@@ -1,0 +1,12 @@
+// The aircraft lands, but with less battery than the declared reserve.
+drone Tiny { endurance 10 [min]; max_speed 10 [m/s]; }
+fleet Alpha = 1 of Tiny;
+station Base = point (0, 0) altitude 0 [m];
+mission Reserve window 0 [s] .. 600 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha hold for 7 [min];
+  Alpha land at Base at 450 [s];
+  constraints {
+    battery_reserve 20 [%];
+  }
+}

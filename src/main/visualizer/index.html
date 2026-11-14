@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Murmur Visualizer</title>
+<style>
+:root {
+	--bg: #f6f7f9;
+	--panel: #ffffff;
+	--ink: #1d2330;
+	--muted: #667085;
+	--line: #d9dde5;
+	--accent: #2f6fec;
+	--zone: #2f6fec;
+	--excluded: #d92d20;
+	--station: #1d2330;
+	--grid: #eceff3;
+	--mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #12151c;
+		--panel: #1a1f29;
+		--ink: #e6e9ef;
+		--muted: #98a2b3;
+		--line: #2c3341;
+		--accent: #6f9cff;
+		--zone: #6f9cff;
+		--excluded: #ff6b5e;
+		--station: #e6e9ef;
+		--grid: #1f2530;
+	}
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+header h1 { font-size: 16px; margin: 0; letter-spacing: .02em; }
+header .file { margin-left: auto; display: flex; gap: 8px; align-items: center; color: var(--muted); }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0; height: calc(100vh - 57px); }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } }
+#stage { position: relative; min-height: 420px; }
+#map { width: 100%; height: 100%; display: block; }
+#drop { position: absolute; inset: 24px; border: 2px dashed var(--line); border-radius: 12px; display: grid; place-items: center; text-align: center; color: var(--muted); padding: 24px; }
+#drop.hidden { display: none; }
+#drop code { font-family: var(--mono); }
+aside { background: var(--panel); border-left: 1px solid var(--line); overflow: auto; padding: 16px; }
+aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 8px; }
+aside h2:first-child { margin-top: 0; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-family: var(--mono); font-size: 12px; }
+.kv span:nth-child(odd) { color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+th, td { text-align: left; padding: 3px 4px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 500; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.bar { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; min-width: 50px; }
+.bar > i { display: block; height: 100%; background: var(--accent); }
+.controls { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--panel); border-top: 1px solid var(--line); position: absolute; left: 0; right: 0; bottom: 0; flex-wrap: wrap; }
+.controls input[type=range] { flex: 1; min-width: 160px; }
+button, select { font: inherit; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+#clock { font-family: var(--mono); min-width: 120px; }
+#gantt { width: 100%; display: block; }
+.ok { color: #12b76a; }
+.fail { color: var(--excluded); }
+label.toggle { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+	<h1>Murmur · Visualizador de plan de vuelo</h1>
+	<div class="file">
+		<input type="file" id="file" accept=".json,application/json">
+	</div>
+</header>
+<main>
+	<div id="stage">
+		<svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+		<div id="drop">
+			<div>
+				<p><strong>Arrastrá un plan de vuelo (JSON) acá</strong>, o elegilo con el botón de arriba.</p>
+				<p>Se genera con <code>src/main/bash/run.sh programa.murmur salida.json</code>.</p>
+				<p>También se puede servir por HTTP y abrir <code>index.html?src=ruta/al/plan.json</code>.</p>
+			</div>
+		</div>
+		<div class="controls">
+			<button id="play" disabled>▶</button>
+			<input type="range" id="time" min="0" max="0" step="0.1" value="0" disabled>
+			<span id="clock">t = 0.0 s</span>
+			<select id="speed">
+				<option value="1">1×</option>
+				<option value="5">5×</option>
+				<option value="20" selected>20×</option>
+				<option value="60">60×</option>
+			</select>
+			<label class="toggle"><input type="checkbox" id="trails" checked> trazas</label>
+			<label class="toggle"><input type="checkbox" id="footprints"> huella del sensor</label>
+		</div>
+	</div>
+	<aside>
+		<h2>Misión</h2>
+		<div class="kv" id="mission"><span>—</span><span></span></div>
+		<h2>Fases</h2>
+		<svg id="gantt" height="0"></svg>
+		<h2>Restricciones y cobertura</h2>
+		<div id="constraints" class="kv"><span>—</span><span></span></div>
+		<h2>Aeronaves</h2>
+		<table>
+			<thead><tr><th>id</th><th>fase</th><th>z [m]</th><th>batería</th></tr></thead>
+			<tbody id="drones"></tbody>
+		</table>
+	</aside>
+</main>
+<script>
+"use strict";
+const SVG = "http://www.w3.org/2000/svg";
+const PALETTE = ["#2f6fec", "#e8590c", "#12b76a", "#9e44db", "#d6409f", "#0e9384", "#ca8504", "#475467"];
+const $ = (id) => document.getElementById(id);
+const state = { log: null, t: 0, playing: false, last: 0, colors: {}, byId: {}, tracks: {}, scale: 1 };
+
+function el(name, attrs = {}, parent) {
+	const node = document.createElementNS(SVG, name);
+	for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+	if (parent) parent.appendChild(node);
+	return node;
+}
+
+/** Escapes every value interpolated into HTML (the log may come from any source). */
+function esc(value) {
+	return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function fmt(value, digits = 1) {
+	return value === null || value === undefined ? "—" : Number(value).toFixed(digits);
+}
+
+function load(log) {
+	if (log.format !== "murmur-flight-log") {
+		alert("El archivo no es un plan de vuelo de Murmur.");
+		return;
+	}
+	state.log = log;
+	state.t = log.mission ? log.mission.window[0] : 0;
+	state.colors = {};
+	(log.fleets || []).forEach((fleet, k) => fleet.aircraft.forEach((id) => state.colors[id] = PALETTE[k % PALETTE.length]));
+	state.byId = Object.fromEntries((log.aircraft || []).map((a) => [a.id, a]));
+	state.tracks = {};
+	for (const frame of log.timeline.frames) {
+		for (const d of frame.drones) (state.tracks[d.id] ||= []).push([frame.t, d.x, d.y, d.z, d.phase, d.battery]);
+	}
+	const frames = log.timeline.frames;
+	const t0 = frames.length ? frames[0].t : 0;
+	const t1 = frames.length ? frames[frames.length - 1].t : 0;
+	Object.assign($("time"), { min: t0, max: t1, value: t0, disabled: frames.length === 0 });
+	$("play").disabled = frames.length === 0;
+	$("drop").classList.add("hidden");
+	drawStatic();
+	drawGantt();
+	drawPanel();
+	update();
+}
+
+function bounds(log) {
+	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+	const add = (x, y) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); };
+	(log.zones || []).forEach((z) => z.vertices.forEach(([x, y]) => add(x, y)));
+	(log.stations || []).forEach((s) => add(...s.position));
+	Object.values(state.tracks).forEach((track) => track.forEach(([, x, y]) => add(x, y)));
+	if (!isFinite(minX)) { minX = minY = -100; maxX = maxY = 100; }
+	const pad = Math.max(maxX - minX, maxY - minY) * 0.08 + 10;
+	return { minX: minX - pad, minY: minY - pad, maxX: maxX + pad, maxY: maxY + pad };
+}
+
+function drawStatic() {
+	const log = state.log;
+	const map = $("map");
+	map.innerHTML = "";
+	const b = bounds(log);
+	const w = b.maxX - b.minX, h = b.maxY - b.minY;
+	state.scale = Math.max(w, h) / 600;
+	map.setAttribute("viewBox", `${b.minX} ${-b.maxY} ${w} ${h + 60 * state.scale}`);
+	const s = state.scale;
+	const defs = el("defs", {}, map);
+	const pattern = el("pattern", { id: "hatch", width: 8 * s, height: 8 * s, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
+	el("line", { x1: 0, y1: 0, x2: 0, y2: 8 * s, stroke: "var(--excluded)", "stroke-width": 2 * s }, pattern);
+	// Grid every "nice" step.
+	const step = Math.pow(10, Math.floor(Math.log10(Math.max(w, h) / 5)));
+	const grid = el("g", { stroke: "var(--grid)", "stroke-width": s }, map);
+	for (let x = Math.ceil(b.minX / step) * step; x <= b.maxX; x += step) el("line", { x1: x, y1: -b.maxY, x2: x, y2: -b.minY }, grid);
+	for (let y = Math.ceil(b.minY / step) * step; y <= b.maxY; y += step) el("line", { x1: b.minX, y1: -y, x2: b.maxX, y2: -y }, grid);
+	const zones = el("g", {}, map);
+	for (const zone of log.zones || []) {
+		const points = zone.vertices.map(([x, y]) => `${x},${-y}`).join(" ");
+		const color = zone.excluded ? "var(--excluded)" : "var(--zone)";
+		el("polygon", { points, fill: zone.excluded ? "url(#hatch)" : color, "fill-opacity": zone.excluded ? 1 : 0.08, stroke: color, "stroke-width": 1.5 * s, "stroke-dasharray": zone.swept || zone.excluded ? "" : `${4 * s} ${3 * s}` }, zones);
+		const label = el("text", { x: zone.center[0], y: -zone.center[1], "font-size": 12 * s, fill: color, "text-anchor": "middle", "font-weight": 600 }, zones);
+		label.textContent = zone.name + (zone.coverage !== null && zone.coverage !== undefined ? ` · ${fmt(zone.coverage * 100)}%` : "");
+	}
+	for (const station of log.stations || []) {
+		const [x, y] = station.position;
+		el("rect", { x: x - 5 * s, y: -y - 5 * s, width: 10 * s, height: 10 * s, fill: "var(--station)" }, zones);
+		const label = el("text", { x: x + 8 * s, y: -y + 14 * s, "font-size": 11 * s, fill: "var(--station)" }, zones);
+		label.textContent = station.name;
+	}
+	state.trailLayer = el("g", { fill: "none", "stroke-width": 1.2 * s, "stroke-linejoin": "round" }, map);
+	state.footLayer = el("g", {}, map);
+	state.droneLayer = el("g", {}, map);
+	state.trails = {};
+	state.markers = {};
+	for (const [id, track] of Object.entries(state.tracks)) {
+		const color = state.colors[id] || "var(--accent)";
+		el("polyline", { points: track.map(([, x, y]) => `${x},${-y}`).join(" "), stroke: color, "stroke-opacity": 0.18 }, state.trailLayer);
+		state.trails[id] = el("polyline", { stroke: color, "stroke-opacity": 0.9 }, state.trailLayer);
+		const g = el("g", {}, state.droneLayer);
+		state.markers[id] = {
+			g,
+			foot: el("circle", { fill: color, "fill-opacity": 0.12, stroke: color, "stroke-opacity": 0.3, "stroke-width": s }, state.footLayer),
+			dot: el("circle", { r: 4.5 * s, fill: color, stroke: "var(--panel)", "stroke-width": 1.5 * s }, g),
+			text: el("text", { "font-size": 10 * s, fill: "var(--ink)", "font-family": "ui-monospace, monospace" }, g),
+		};
+	}
+	// Scale bar.
+	const bar = el("g", { stroke: "var(--muted)", "stroke-width": s }, map);
+	const y0 = -b.minY + 30 * s;
+	el("line", { x1: b.minX + 20 * s, y1: y0, x2: b.minX + 20 * s + step, y2: y0 }, bar);
+	const t = el("text", { x: b.minX + 20 * s, y: y0 + 14 * s, "font-size": 11 * s, fill: "var(--muted)", stroke: "none" }, bar);
+	t.textContent = `${step} m`;
+}
+
+function sample(track, t) {
+	if (!track.length || t < track[0][0]) return null;
+	let lo = 0, hi = track.length - 1;
+	if (t >= track[hi][0]) return { p: track[hi], i: hi };
+	while (lo + 1 < hi) { const mid = (lo + hi) >> 1; if (track[mid][0] <= t) lo = mid; else hi = mid; }
+	const a = track[lo], b = track[hi];
+	const u = (t - a[0]) / (b[0] - a[0] || 1);
+	const mix = (k) => a[k] + u * (b[k] - a[k]);
+	return { p: [t, mix(1), mix(2), mix(3), a[4], mix(5)], i: lo };
+}
+
+function update() {
+	const log = state.log;
+	if (!log) return;
+	const t = state.t;
+	$("clock").textContent = `t = ${t.toFixed(1)} s`;
+	$("time").value = t;
+	const s = state.scale;
+	const rows = [];
+	const showTrails = $("trails").checked;
+	const showFoot = $("footprints").checked;
+	for (const [id, track] of Object.entries(state.tracks)) {
+		const result = sample(track, t);
+		const marker = state.markers[id];
+		if (!result) {
+			marker.g.setAttribute("display", "none");
+			marker.foot.setAttribute("display", "none");
+			state.trails[id].setAttribute("points", "");
+			continue;
+		}
+		const [, x, y, z, phase, battery] = result.p;
+		marker.g.setAttribute("display", "");
+		marker.dot.setAttribute("cx", x);
+		marker.dot.setAttribute("cy", -y);
+		marker.text.setAttribute("x", x + 7 * s);
+		marker.text.setAttribute("y", -y - 7 * s);
+		marker.text.textContent = id;
+		const type = log.droneTypes.find((d) => d.name === (state.byId[id] || {}).type);
+		const radius = type && type.payload && phase !== "ground" ? z * Math.tan(type.payload.fov / 2) : 0;
+		marker.foot.setAttribute("display", showFoot && radius > 0 ? "" : "none");
+		marker.foot.setAttribute("cx", x);
+		marker.foot.setAttribute("cy", -y);
+		marker.foot.setAttribute("r", radius);
+		const head = track.slice(0, result.i + 1).map(([, px, py]) => `${px},${-py}`);
+		head.push(`${x},${-y}`);
+		state.trails[id].setAttribute("points", showTrails ? head.join(" ") : "");
+		rows.push(`<tr><td><span class="swatch" style="background:${esc(state.colors[id])}"></span>${esc(id)}</td><td>${esc(phase)}</td><td>${fmt(z)}</td><td><div class="bar"><i style="width:${Math.max(0, battery * 100)}%"></i></div></td></tr>`);
+	}
+	$("drones").innerHTML = rows.join("") || `<tr><td colspan="4">sin aeronaves desplegadas</td></tr>`;
+	if (state.cursor) {
+		state.cursor.setAttribute("x1", state.ganttX(t));
+		state.cursor.setAttribute("x2", state.ganttX(t));
+	}
+}
+
+function drawGantt() {
+	const log = state.log;
+	const gantt = $("gantt");
+	gantt.innerHTML = "";
+	const phases = (log.phases || []).filter((p) => p.maneuver !== "sequence" && p.maneuver !== "parallel");
+	if (!log.mission || !phases.length) { gantt.setAttribute("height", 0); state.cursor = null; return; }
+	const width = 300, row = 18;
+	const [w0, w1] = log.mission.window;
+	gantt.setAttribute("viewBox", `0 0 ${width} ${phases.length * row + 6}`);
+	gantt.setAttribute("height", phases.length * row + 6);
+	state.ganttX = (t) => 4 + (t - w0) / (w1 - w0 || 1) * (width - 8);
+	el("rect", { x: 4, y: 0, width: width - 8, height: phases.length * row, fill: "var(--grid)", rx: 3 }, gantt);
+	phases.forEach((phase, k) => {
+		const x0 = state.ganttX(phase.start), x1 = state.ganttX(phase.end);
+		const rect = el("rect", { x: x0, y: k * row + 3, width: Math.max(2, x1 - x0), height: row - 6, fill: "var(--accent)", "fill-opacity": 0.75, rx: 2 }, gantt);
+		const title = el("title", {}, rect);
+		title.textContent = `${phase.label}: ${fmt(phase.start)} – ${fmt(phase.end)} s`;
+		const text = el("text", { x: Math.min(x1 + 4, width - 4), y: k * row + 13, "font-size": 10, fill: "var(--ink)", "text-anchor": x1 + 4 > width - 90 ? "end" : "start" }, gantt);
+		text.textContent = phase.label;
+	});
+	state.cursor = el("line", { y1: 0, y2: phases.length * row, stroke: "var(--excluded)", "stroke-width": 1.5 }, gantt);
+}
+
+function drawPanel() {
+	const log = state.log;
+	// Values are escaped, except those wrapped by html() (markup built here from numbers).
+	// Only objects created here can carry markup (a JSON value cannot forge membership).
+	const trusted = new WeakSet();
+	const html = (markup) => { const wrapper = { markup }; trusted.add(wrapper); return wrapper; };
+	const kv = (pairs) => pairs.map(([k, v]) => `<span>${esc(k)}</span><span>${trusted.has(v) ? v.markup : esc(v)}</span>`).join("");
+	$("mission").innerHTML = log.mission
+		? kv([["nombre", log.mission.name], ["ventana", `${log.mission.window[0]} .. ${log.mission.window[1]} s`], ["fin", `${fmt(log.mission.end)} s`], ["aeronaves", (log.aircraft || []).length]])
+		: kv([["misión", "el programa no declara misión"]]);
+	const c = log.constraints;
+	const pairs = [];
+	if (c) {
+		pairs.push(["min_separation", c.minSeparation === null ? "—" : `${c.minSeparation} m`]);
+		pairs.push(["battery_reserve", c.batteryReserve === null ? "—" : `${fmt(c.batteryReserve * 100, 0)} %`]);
+		for (const req of c.coverage || []) {
+			const ok = req.achieved + 1e-9 >= req.required;
+			pairs.push([`cobertura ${req.zone}`, html(`<span class="${ok ? "ok" : "fail"}">${fmt(req.achieved * 100)}% (≥ ${fmt(req.required * 100, 0)}%)</span>`)]);
+		}
+	}
+	for (const zone of log.zones || []) if (zone.excluded) pairs.push(["excluida", zone.name]);
+	for (const a of log.aircraft || []) if (a.deployed) pairs.push([`batería ${a.id}`, `${fmt(a.batteryAtEnd * 100)} % al aterrizar`]);
+	$("constraints").innerHTML = kv(pairs.length ? pairs : [["—", ""]]);
+}
+
+function tick(now) {
+	if (!state.playing) return;
+	const dt = (now - state.last) / 1000;
+	state.last = now;
+	state.t = Math.min(Number($("time").max), state.t + dt * Number($("speed").value));
+	update();
+	if (state.t >= Number($("time").max)) { state.playing = false; $("play").textContent = "▶"; return; }
+	requestAnimationFrame(tick);
+}
+
+$("play").addEventListener("click", () => {
+	state.playing = !state.playing;
+	$("play").textContent = state.playing ? "⏸" : "▶";
+	if (state.playing) {
+		if (state.t >= Number($("time").max)) state.t = Number($("time").min);
+		state.last = performance.now();
+		requestAnimationFrame(tick);
+	}
+});
+$("time").addEventListener("input", (e) => { state.t = Number(e.target.value); update(); });
+$("trails").addEventListener("change", update);
+$("footprints").addEventListener("change", update);
+
+function readFile(file) {
+	const reader = new FileReader();
+	reader.onload = () => { try { load(JSON.parse(reader.result)); } catch (error) { alert("JSON inválido: " + error.message); } };
+	reader.readAsText(file);
+}
+$("file").addEventListener("change", (e) => e.target.files[0] && readFile(e.target.files[0]));
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
+
+const src = new URLSearchParams(location.search).get("src");
+if (src && new URL(src, location.href).origin !== location.origin) alert("Solo se admiten planes de vuelo del mismo origen.");
+else if (src) fetch(src).then((r) => r.json()).then(load).catch((error) => alert("No se pudo cargar " + src + ": " + error.message));
+</script>
+</body>
+</html>

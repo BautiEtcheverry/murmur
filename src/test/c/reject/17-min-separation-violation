@@ -1,0 +1,12 @@
+// Spec reject (XII): a line formation tighter than the minimum separation.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+mission Tight window 0 [s] .. 300 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha morph to line spacing 5 [m] over 20 [s];
+  Alpha land at Base at 280 [s];
+  constraints {
+    min_separation 8 [m];
+  }
+}

@@ -1,0 +1,2 @@
+// max_speed is mandatory: without it, no kinematic check can be performed.
+drone Scout { endurance 25 [min]; }

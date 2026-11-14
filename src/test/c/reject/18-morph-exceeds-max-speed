@@ -1,0 +1,9 @@
+// Spec reject (XIII): reaching a 500 [m] ring in 5 [s] exceeds max_speed.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+mission TooFast window 0 [s] .. 300 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha morph to circle radius 500 [m] over 5 [s];
+  Alpha land at Base at 280 [s];
+}

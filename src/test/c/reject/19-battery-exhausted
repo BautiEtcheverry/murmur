@@ -1,0 +1,9 @@
+// Spec reject (XIV): a 3 [min] endurance cannot sustain a 5 [min] hover.
+drone Tiny { endurance 3 [min]; max_speed 10 [m/s]; }
+fleet Alpha = 1 of Tiny;
+station Base = point (0, 0) altitude 0 [m];
+mission Drain window 0 [s] .. 600 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha hold for 5 [min];
+  Alpha land at Base at 400 [s];
+}

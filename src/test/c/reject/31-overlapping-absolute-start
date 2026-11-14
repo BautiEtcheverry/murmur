@@ -1,0 +1,10 @@
+// The second takeoff is fixed at 5 [s], but the first one is still climbing.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+fleet Beta  = 2 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+mission Overlap window 0 [s] .. 300 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Beta  takeoff from Base at 5 [s];
+  all land at Base at 280 [s];
+}

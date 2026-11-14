@@ -1,0 +1,13 @@
+// Coverage is required, but no aircraft that sweeps the zone carries a sensor.
+drone Scout { endurance 25 [min]; max_speed 18 [m/s]; }
+fleet Alpha = 2 of Scout;
+station Base = point (0, 0) altitude 0 [m];
+zone AOI = polygon [(0,0), (100,0), (100,100), (0,100)];
+mission Blind window 0 [s] .. 600 [s] {
+  Alpha takeoff from Base at 0 [s];
+  Alpha sweep AOI with lawnmower spacing 20 [m] altitude 40 [m];
+  Alpha land at Base at 590 [s];
+  constraints {
+    require coverage of AOI >= 95 [%];
+  }
+}
