@@ -247,61 +247,63 @@ static Vec2 _centroidOf(const Selection * selection) {
 	return c;
 }
 
-/** Exhaustive search of the assignment with minimum total distance. */
-static void _permute(double * cost, int n, int depth, int * current, bool * used, double sum, double * best, int * bestPerm) {
-	if (*best <= sum) return;
-	if (depth == n) {
-		*best = sum;
-		for (int k = 0; k < n; ++k) bestPerm[k] = current[k];
-		return;
-	}
-	for (int j = 0; j < n; ++j) {
-		if (used[j]) continue;
-		used[j] = true;
-		current[depth] = j;
-		_permute(cost, n, depth + 1, current, used, sum + cost[depth * n + j], best, bestPerm);
-		used[j] = false;
-	}
-}
-
 /**
  * Assigns each aircraft of the selection to one of the targets (as many as
- * aircraft). For small groups, it finds the assignment of minimum total
- * distance, which guarantees that no two straight trajectories cross;
- * otherwise, it greedily pairs the closest aircraft-target pair first.
+ * aircraft), minimizing the sum of the squared distances (Hungarian
+ * algorithm, O(n^3)). When every aircraft flies in a straight line to its
+ * target and all of them arrive at the same time (as in a morph), this
+ * assignment guarantees that no two aircraft get closer than the smallest
+ * spacing between the starting or the target points, divided by sqrt(2)
+ * (Turpin, Michael & Kumar, CAPT, 2014). In particular, no two paths cross.
  */
 static void _assign(const Selection * selection, const Vec2 * targets, int * slotOf) {
 	const int n = selection->count;
-	double * cost = calloc((unsigned) n * (unsigned) n + 1u, sizeof(double));
-	bool * used = calloc((unsigned) n + 1u, sizeof(bool));
-	for (int k = 0; k < n; ++k) {
-		const Keyframe * last = _last(&_model->aircraft[selection->indexes[k]]);
-		const Vec2 p = {last->p.x, last->p.y};
-		for (int j = 0; j < n; ++j) cost[k * n + j] = distance2(p, targets[j]);
-		slotOf[k] = -1;
-	}
-	if (n <= 8) {
-		int current[8];
-		double best = DBL_MAX;
-		_permute(cost, n, 0, current, used, 0, &best, slotOf);
-	}
-	else {
-		for (int round = 0; round < n; ++round) {
-			double best = DBL_MAX;
-			int bestAircraft = 0;
-			int bestTarget = 0;
-			for (int k = 0; k < n; ++k) {
-				if (slotOf[k] != -1) continue;
-				for (int j = 0; j < n; ++j) {
-					if (!used[j] && cost[k * n + j] < best) { best = cost[k * n + j]; bestAircraft = k; bestTarget = j; }
-				}
-			}
-			slotOf[bestAircraft] = bestTarget;
-			used[bestTarget] = true;
+	if (n <= 0) return;
+	const unsigned size = (unsigned) n + 1u;
+	double * cost = calloc(size * size, sizeof(double));
+	double * u = calloc(size, sizeof(double));
+	double * v = calloc(size, sizeof(double));
+	double * minv = calloc(size, sizeof(double));
+	int * owner = calloc(size, sizeof(int));	// owner[j]: aircraft (1-based) assigned to target j.
+	int * way = calloc(size, sizeof(int));
+	bool * used = calloc(size, sizeof(bool));
+	for (int k = 1; k <= n; ++k) {
+		const Keyframe * last = _last(&_model->aircraft[selection->indexes[k - 1]]);
+		for (int j = 1; j <= n; ++j) {
+			const double dx = last->p.x - targets[j - 1].x;
+			const double dy = last->p.y - targets[j - 1].y;
+			cost[k * size + j] = dx * dx + dy * dy;
 		}
 	}
-	free(cost);
-	free(used);
+	for (int k = 1; k <= n; ++k) {
+		owner[0] = k;
+		int j0 = 0;
+		for (int j = 0; j <= n; ++j) { minv[j] = DBL_MAX; used[j] = false; }
+		do {
+			used[j0] = true;
+			const int k0 = owner[j0];
+			double delta = DBL_MAX;
+			int j1 = 0;
+			for (int j = 1; j <= n; ++j) {
+				if (used[j]) continue;
+				const double reduced = cost[k0 * size + j] - u[k0] - v[j];
+				if (reduced < minv[j]) { minv[j] = reduced; way[j] = j0; }
+				if (minv[j] < delta) { delta = minv[j]; j1 = j; }
+			}
+			for (int j = 0; j <= n; ++j) {
+				if (used[j]) { u[owner[j]] += delta; v[j] -= delta; }
+				else minv[j] -= delta;
+			}
+			j0 = j1;
+		} while (owner[j0] != 0);
+		do {
+			const int j1 = way[j0];
+			owner[j0] = owner[j1];
+			j0 = j1;
+		} while (j0 != 0);
+	}
+	for (int j = 1; j <= n; ++j) slotOf[owner[j] - 1] = j - 1;
+	free(cost); free(u); free(v); free(minv); free(owner); free(way); free(used);
 }
 
 static Vec2 _formationOffset(const FormationShape * shape, int index, int count) {
@@ -748,10 +750,15 @@ static double _runLeaf(Statement * statement, double cursor) {
 				targets[k] = path->count == 0 ? (Vec2) {last->p.x, last->p.y} : path->points[0];
 				targetZ[k] = altitude;
 			}
-			end = _groupTransit(&selection, targets, targetZ, -1);
+			// Everyone starts the pattern together, once the whole group has
+			// descended to the sweep altitude: an aircraft that is already there
+			// must not fly under a neighbor that is still descending.
+			const double patternStart = _groupTransit(&selection, targets, targetZ, -1);
+			end = patternStart;
 			for (int k = 0; k < selection.count; ++k) {
 				Aircraft * aircraft = &_model->aircraft[selection.indexes[k]];
 				const Path * path = &paths[slotOf[k]];
+				_push(aircraft, patternStart, _last(aircraft)->p, true);
 				for (int p = 1; p < path->count; ++p) {
 					Vec3 target = {path->points[p].x, path->points[p].y, altitude};
 					_moveTo(aircraft, target, _cruiseSpeed(aircraft), 0);
