@@ -26,6 +26,7 @@ figure pre span.l { display: block; padding-left: 2.6em; text-indent: -2.6em; }
 figure pre span.l::before { counter-increment: line; content: counter(line, decimal-leading-zero); display: inline-block; width: 2em; margin-right: .6em; color: #9aa1ae; text-align: right; text-indent: 0; }
 .tcap { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 9pt; color: var(--muted); text-align: center; margin: -6pt 0 12pt; }
 .tcap b { color: var(--ink); }
+figure.shot img { display: block; width: 82%; margin: 0 auto; border: 1px solid var(--rule); border-radius: 3pt; }
 figcaption { font-size: 9pt; color: var(--muted); margin-top: 4pt; text-align: center; }
 figcaption b { color: var(--ink); }
 table { width: 100%; border-collapse: collapse; margin: 8pt 0 12pt; font-size: 9.5pt; break-inside: auto; }
@@ -91,14 +92,14 @@ tr { break-inside: avoid; }
 		<li><a href="#s5" class="name">5. Conclusiones</a><span class="dots"></span><span class="pg" data-find="5. Conclusiones">?</span></li>
 		<li><a href="#s6" class="name">6. Referencias</a><span class="dots"></span><span class="pg" data-find="6. Referencias">?</span></li>
 		<li><a href="#s7" class="name">7. Bibliografía</a><span class="dots"></span><span class="pg" data-find="7. Bibliografía">?</span></li>
-		<li><a href="#sA" class="name">Anexo A. Correcciones de entregas anteriores</a><span class="dots"></span><span class="pg" data-find="Anexo A. Correcciones de entregas anteriores">?</span></li>
+		<li><a href="#sA" class="name">Anexo A. Correcciones de la primera entrega</a><span class="dots"></span><span class="pg" data-find="Anexo A. Correcciones de la primera entrega">?</span></li>
 	</ol>
 </div>
 
 <section class="chapter" id="s1">
 <h1>1. Introducción</h1>
 <p>Murmur es un lenguaje de dominio específico (DSL) para especificar misiones de enjambres de drones como si fueran código: el programador declara los tipos de aeronave, las flotas, el espacio de vuelo y las maniobras que cada grupo ejecuta a lo largo del tiempo, y el compilador reconstruye las trayectorias, verifica que la misión sea segura y recién entonces emite un plan de vuelo.</p>
-<p>Este documento describe el resultado final del proyecto. La sección 2 presenta el modelo computacional, es decir, el dominio, el lenguaje y su semántica, incorporando las decisiones tomadas a partir de las correcciones de las entregas anteriores. La sección 3 describe la implementación del compilador (<i>frontend</i> y <i>backend</i>), los adicionales desarrollados y las dificultades encontradas. Las secciones 4 y 5 cierran con las extensiones posibles y las conclusiones. Finalmente, el Anexo A resume cómo se resolvió cada una de las correcciones recibidas.</p>
+<p>Este documento describe el resultado final del proyecto. La sección 2 presenta el modelo computacional, es decir, el dominio, el lenguaje y su semántica, incorporando las decisiones tomadas a partir de las correcciones de la primera entrega. La sección 3 describe la implementación del compilador (<i>frontend</i> y <i>backend</i>), los adicionales desarrollados y las dificultades encontradas. Las secciones 4 y 5 cierran con las extensiones posibles y las conclusiones. Finalmente, el Anexo A resume cómo se resolvió cada una de las correcciones recibidas.</p>
 <p>El compilador está escrito en C sobre el proyecto base <code>Flex-Bison-Compiler</code>, utiliza Flex y Bison para el análisis léxico y sintáctico, y se construye y prueba dentro de un contenedor de Docker. El artefacto de salida es un registro de vuelo en formato JSON, que consume un visualizador independiente escrito en HTML, SVG y JavaScript.</p>
 </section>
 
@@ -240,6 +241,12 @@ tr { break-inside: avoid; }
 <pre><span class="l">{</span><span class="l">  "format": "murmur-flight-log", "version": 1,</span><span class="l">  "mission": {"name": "Relevamiento", "window": [0, 1500], "end": 889.623},</span><span class="l">  "constraints": {"minSeparation": 20, "batteryReserve": 0.2,</span><span class="l">                  "coverage": [{"zone": "Campo", "required": 0.9, "achieved": 0.99}]},</span><span class="l">  "phases": [{"label": "Alpha takeoff Base", "maneuver": "takeoff", "start": 0, "end": 10}, ...],</span><span class="l">  "timeline": {"dt": 1, "frames": [</span><span class="l">    {"t": 5, "drones": [{"id": "Quad#1", "x": -65, "y": 10, "z": 15, "phase": "climb", "battery": 0.996}, ...]},</span><span class="l">    ...]}</span><span class="l">}</span></pre>
 <figcaption><b>Código 6.</b> Extracto del registro de vuelo generado para el Código 3. Las claves omitidas (tipos, flotas, zonas, estaciones y aeronaves) se documentan en el README.</figcaption>
 </figure>
+<p>Las Figuras 1 a 5 muestran el visualizador con el registro de vuelo del Código 3, detenido a los 03:43 de la misión, mientras la flota Alpha barre el campo y la flota Beta orbita el punto de interés. La cabecera resume los indicadores de la misión y el margen con que se cumple cada restricción (Figura 1); el mapa muestra las zonas, la estación y las aeronaves con su estela (Figura 2); el plan de maniobras ubica cada maniobra en el tiempo (Figura 3), y los gráficos comparan la batería y la separación de las aeronaves con los límites declarados (Figuras 4 y 5).</p>
+<figure class="shot"><img src="img/indicadores.png" alt="Indicadores de la misión en el visualizador"><figcaption><b>Figura 1.</b> Indicadores de la misión: duración, aeronaves, distancia recorrida y el margen de cada restricción verificada.</figcaption></figure>
+<figure class="shot"><img src="img/mapa.png" alt="Mapa de la misión en el visualizador"><figcaption><b>Figura 2.</b> Mapa de la misión: el campo con la antena excluida, la estación Base, la flota Alpha barriendo en franjas y la flota Beta orbitando el punto de interés.</figcaption></figure>
+<figure class="shot"><img src="img/plan.png" alt="Plan de maniobras en el visualizador"><figcaption><b>Figura 3.</b> Plan de maniobras: cada maniobra con su intervalo y su estado en el instante elegido, con los controles de reproducción.</figcaption></figure>
+<figure class="shot"><img src="img/bateria.png" alt="Gráfico de batería restante"><figcaption><b>Figura 4.</b> Batería restante de cada aeronave frente a la reserva exigida del 20 %.</figcaption></figure>
+<figure class="shot"><img src="img/separacion.png" alt="Gráfico de distancia entre las aeronaves más cercanas"><figcaption><b>Figura 5.</b> Distancia entre las dos aeronaves más cercanas frente a la separación mínima exigida de 20 m.</figcaption></figure>
 
 <h3>Pruebas</h3>
 <p>La suite contiene 27 programas de aceptación (uno por cada característica del lenguaje, incluidos los diecinueve casos de la especificación) y 32 de rechazo, que cubren errores léxicos, sintácticos, semánticos y de verificación de la misión, incluidos los dieciséis casos de rechazo de la especificación. El <i>script</i> <code>test.sh</code> del proyecto base los ejecuta todos, y el compilador se construye con AddressSanitizer, por lo que cualquier acceso inválido o pérdida de memoria hace fallar la prueba correspondiente.</p>
@@ -273,7 +280,7 @@ tr { break-inside: avoid; }
 <section class="chapter" id="s5">
 <h1>5. Conclusiones</h1>
 <p>Se implementó un compilador completo para Murmur: el <i>frontend</i> reconoce la sintaxis final del lenguaje y construye el AST, y el <i>backend</i> lo valida semánticamente, simula la misión, verifica la totalidad de las restricciones planteadas en la especificación y genera un registro de vuelo que un visualizador independiente reproduce. Las 59 pruebas de la suite se comportan como se espera.</p>
-<p>El trabajo confirmó la idea que motivó el lenguaje: al declarar la misión en lugar de calcularla, los errores de planificación (una batería que no alcanza, dos aeronaves que se cruzan, una antena que se atraviesa) aparecen en tiempo de compilación, con un mensaje que indica la aeronave, el instante y la magnitud de la violación. Las correcciones de las entregas anteriores mejoraron el diseño de forma concreta: separar las dimensiones, darle a <code>all</code> el tipo de una flota, distinguir la fecha límite como categoría temporal propia y desacoplar el compilador del visualizador mediante el formato JSON simplificaron tanto el lenguaje como su implementación.</p>
+<p>El trabajo confirmó la idea que motivó el lenguaje: al declarar la misión en lugar de calcularla, los errores de planificación (una batería que no alcanza, dos aeronaves que se cruzan, una antena que se atraviesa) aparecen en tiempo de compilación, con un mensaje que indica la aeronave, el instante y la magnitud de la violación. Las correcciones de la primera entrega mejoraron el diseño de forma concreta: separar las dimensiones, darle a <code>all</code> el tipo de una flota, distinguir la fecha límite como categoría temporal propia y desacoplar el compilador del visualizador mediante el formato JSON simplificaron tanto el lenguaje como su implementación.</p>
 </section>
 
 <section class="chapter" id="s6">
@@ -300,29 +307,29 @@ tr { break-inside: avoid; }
 </section>
 
 <section class="chapter" id="sA">
-<h1>Anexo A. Correcciones de entregas anteriores</h1>
-<p class="noindent">La Tabla 3 resume cómo se resolvió cada observación recibida sobre la especificación (Stage I) y el <i>frontend</i> (Stage II).</p>
+<h1>Anexo A. Correcciones de la primera entrega</h1>
+<p class="noindent">La Tabla 3 resume cómo se resolvió cada observación recibida en la corrección de la especificación (Stage I). Las observaciones se numeran en el orden en que aparecen en esa corrección.</p>
 <table>
 	<thead><tr><th style="width:4%">#</th><th style="width:40%">Observación</th><th>Resolución</th></tr></thead>
 	<tbody>
-		<tr><td>0</td><td>La licencia no tiene los nombres del equipo.</td><td><code>LICENSE.md</code> indica los tres integrantes.</td></tr>
-		<tr><td>1</td><td>El README apunta al repositorio original.</td><td>Las medallas y los enlaces apuntan a <code>BautiEtcheverry/murmur</code>; el proyecto base solo se menciona como origen.</td></tr>
-		<tr><td>2–6</td><td>Tabla de contenidos, numeración y leyenda de códigos, tipografía, recuadros y márgenes, listas numeradas.</td><td>Este informe tiene una tabla de contenidos con subsecciones y páginas correctas; todos los códigos están numerados, con leyenda, recuadro, fuente monoespaciada, numeración de líneas y el mismo margen; las secuencias se redactan como listas numeradas.</td></tr>
-		<tr><td>7, 15</td><td>Ortografía, uso de mayúsculas, comas, espacios dobles, «sub flota» y «subflotas»; sangría y espaciado.</td><td>Se revisó la redacción; se usa siempre «subflota», sangría en cada párrafo y sin espacio entre párrafos.</td></tr>
-		<tr><td>8</td><td>La cláusula <code>before</code> no encaja en las tres formas de fijar inicio y duración.</td><td>Se definen cuatro categorías temporales (sección 2.3); <code>before</code> es una fecha límite.</td></tr>
-		<tr><td>9</td><td><code>all</code> no está definido.</td><td><code>all</code> es una palabra reservada y una alternativa de <code>fleetRef</code>: denota todas las aeronaves de todas las flotas. Toda maniobra acepta una flota, una subflota o <code>all</code> (pruebas <code>accept/16</code> y <code>accept/19</code>).</td></tr>
-		<tr><td>10</td><td>Restricciones que dependen de campos opcionales omitidos.</td><td>Política explícita (sección 2.4): exigir cobertura sin ningún sensor se rechaza (<code>reject/21</code>); <code>min_separation</code> solo necesita posiciones.</td></tr>
-		<tr><td>11</td><td><code>[%]</code> y <code>[px]</code> en la misma dimensión.</td><td>Son dimensiones distintas, con terminales distintos en la gramática (<code>reject/10</code>).</td></tr>
-		<tr><td>12</td><td>Centro de una formación adoptada por una subflota.</td><td>Es el centroide del grupo comandado (la subflota).</td></tr>
-		<tr><td>13</td><td>El punto y coma reduce la DX.</td><td>Es opcional (<code>accept/20</code>).</td></tr>
-		<tr><td>14</td><td>Reemplazar <code>center</code> por <code>at</code>.</td><td><code>circle at (x, y) radius r</code>.</td></tr>
-		<tr><td>16</td><td>Usar <code>drone</code> en lugar de <code>drone_type</code>.</td><td>La palabra reservada es <code>drone</code>.</td></tr>
-		<tr><td>17</td><td>Priorizar el JSON como registro crudo y un visualizador independiente; LaTeX como deseable.</td><td>El compilador genera solo el JSON con la posición de cada aeronave en cada instante, y el visualizador HTML + SVG + JS lo consume. El reporte LaTeX queda como extensión futura.</td></tr>
-		<tr><td>18</td><td>Con una sola misión, ubicar las restricciones dentro de ella.</td><td>Solo se admite una misión (<code>reject/24</code>), y <code>constraints</code> se declara dentro de su cuerpo.</td></tr>
-		<tr><td>19</td><td>Reemplazar las maniobras predefinidas por procedimientos reutilizables.</td><td>Se analizó y se dejó como la primera extensión futura (sección 4), por su impacto en la gramática y en el modelo de simulación.</td></tr>
+		<tr><td>1</td><td>La licencia no tiene los nombres del equipo.</td><td><code>LICENSE.md</code> indica los tres integrantes.</td></tr>
+		<tr><td>2</td><td>El README apunta al repositorio original.</td><td>Las medallas y los enlaces apuntan a <code>BautiEtcheverry/murmur</code>; el proyecto base solo se menciona como origen.</td></tr>
+		<tr><td>3–7</td><td>Tabla de contenidos, numeración y leyenda de códigos, tipografía, recuadros y márgenes, listas numeradas.</td><td>Este informe tiene una tabla de contenidos con subsecciones y páginas correctas; todos los códigos están numerados, con leyenda, recuadro, fuente monoespaciada, numeración de líneas y el mismo margen; las secuencias se redactan como listas numeradas.</td></tr>
+		<tr><td>8, 16</td><td>Ortografía, uso de mayúsculas, comas, espacios dobles, «sub flota» y «subflotas»; sangría y espaciado.</td><td>Se revisó la redacción; se usa siempre «subflota», sangría en cada párrafo y sin espacio entre párrafos.</td></tr>
+		<tr><td>9</td><td>La cláusula <code>before</code> no encaja en las tres formas de fijar inicio y duración.</td><td>Se definen cuatro categorías temporales (sección 2.3); <code>before</code> es una fecha límite.</td></tr>
+		<tr><td>10</td><td><code>all</code> no está definido.</td><td><code>all</code> es una palabra reservada y una alternativa de <code>fleetRef</code>: denota todas las aeronaves de todas las flotas. Toda maniobra acepta una flota, una subflota o <code>all</code> (pruebas <code>accept/16</code> y <code>accept/19</code>).</td></tr>
+		<tr><td>11</td><td>Restricciones que dependen de campos opcionales omitidos.</td><td>Política explícita (sección 2.4): exigir cobertura sin ningún sensor se rechaza (<code>reject/21</code>); <code>min_separation</code> solo necesita posiciones.</td></tr>
+		<tr><td>12</td><td><code>[%]</code> y <code>[px]</code> en la misma dimensión.</td><td>Son dimensiones distintas, con terminales distintos en la gramática (<code>reject/10</code>).</td></tr>
+		<tr><td>13</td><td>Centro de una formación adoptada por una subflota.</td><td>Es el centroide del grupo comandado (la subflota).</td></tr>
+		<tr><td>14</td><td>El punto y coma reduce la DX.</td><td>Es opcional (<code>accept/20</code>).</td></tr>
+		<tr><td>15</td><td>Reemplazar <code>center</code> por <code>at</code>.</td><td><code>circle at (x, y) radius r</code>.</td></tr>
+		<tr><td>17</td><td>Usar <code>drone</code> en lugar de <code>drone_type</code>.</td><td>La palabra reservada es <code>drone</code>.</td></tr>
+		<tr><td>18</td><td>Priorizar el JSON como registro crudo y un visualizador independiente; LaTeX como deseable.</td><td>El compilador genera solo el JSON con la posición de cada aeronave en cada instante, y el visualizador HTML + SVG + JS lo consume. El reporte LaTeX queda como extensión futura.</td></tr>
+		<tr><td>19</td><td>Con una sola misión, ubicar las restricciones dentro de ella.</td><td>Solo se admite una misión (<code>reject/24</code>), y <code>constraints</code> se declara dentro de su cuerpo.</td></tr>
+		<tr><td>20</td><td>Reemplazar las maniobras predefinidas por procedimientos reutilizables.</td><td>Se analizó y se dejó como la primera extensión futura (sección 4), por su impacto en la gramática y en el modelo de simulación.</td></tr>
 	</tbody>
 </table>
-<div class="tcap"><b>Tabla 3.</b> Observaciones recibidas en las entregas anteriores y su resolución.</div>
+<div class="tcap"><b>Tabla 3.</b> Observaciones recibidas en la primera entrega y su resolución.</div>
 </section>
 
 </body>
