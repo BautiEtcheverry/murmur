@@ -485,20 +485,29 @@ static void _recordPhase(const char * label, StatementKind kind, double start, d
 /**
  * Collective, deconflicted transit of a group. Each aircraft climbs (or
  * descends) vertically to its own transit level (the highest of its current
- * and target altitudes, plus its layer), flies horizontally to its target
- * contouring excluded zones, and hovers there until every aircraft of the
- * group has arrived. Only then, all of them change altitude vertically to
+ * and target altitudes, plus its layer) and hovers there until every aircraft
+ * of the group has reached its level, so nobody flies horizontally next to a
+ * neighbor that is still climbing. Then each one flies horizontally to its
+ * target contouring excluded zones, and hovers there until every aircraft of
+ * the group has arrived. Only then, all of them change altitude vertically to
  * their target altitude, so no trajectory crosses another one at the same
  * altitude. If finishAt is non-negative, each vertical change is scheduled to
  * end exactly at that instant. Returns the instant in which the group ends.
  */
 static double _groupTransit(const Selection * selection, const Vec2 * targets, const double * targetZ, double finishAt) {
+	double climbed = 0;
+	for (int k = 0; k < selection->count; ++k) {
+		Aircraft * aircraft = &_model->aircraft[selection->indexes[k]];
+		const Keyframe * last = _last(aircraft);
+		_verticalTo(aircraft, fmax(last->p.z, targetZ[k]) + _layer(k), _cruiseSpeed(aircraft));
+		climbed = fmax(climbed, _last(aircraft)->t);
+	}
 	double sync = 0;
 	for (int k = 0; k < selection->count; ++k) {
 		Aircraft * aircraft = &_model->aircraft[selection->indexes[k]];
 		const Keyframe * last = _last(aircraft);
-		const double level = fmax(last->p.z, targetZ[k]) + _layer(k);
-		_moveTo(aircraft, (Vec3) {targets[k].x, targets[k].y, level}, _cruiseSpeed(aircraft), 0);
+		_push(aircraft, climbed, last->p, true);
+		_moveTo(aircraft, (Vec3) {targets[k].x, targets[k].y, last->p.z}, _cruiseSpeed(aircraft), 0);
 		sync = fmax(sync, _last(aircraft)->t);
 	}
 	double end = sync;
@@ -520,6 +529,7 @@ static double _groupTransit(const Selection * selection, const Vec2 * targets, c
 
 /** Duration of _groupTransit for the given targets (without executing it). */
 static double _groupTransitDuration(const Selection * selection, const Vec2 * targets, const double * targetZ) {
+	double climb = 0;
 	double transit = 0;
 	double vertical = 0;
 	for (int k = 0; k < selection->count; ++k) {
@@ -530,10 +540,11 @@ static double _groupTransitDuration(const Selection * selection, const Vec2 * ta
 		const double up = level - last->p.z;
 		const double horizontal = _routedLength((Vec2) {last->p.x, last->p.y}, targets[k]);
 		const double speed = _cruiseSpeed(aircraft);
-		transit = fmax(transit, fabs(up) / fmin(speed, 0 < up ? SIM_CLIMB_RATE : SIM_DESCENT_RATE) + horizontal / speed);
+		climb = fmax(climb, fabs(up) / fmin(speed, 0 < up ? SIM_CLIMB_RATE : SIM_DESCENT_RATE));
+		transit = fmax(transit, horizontal / speed);
 		vertical = fmax(vertical, fabs(level - targetZ[k]) / SIM_DESCENT_RATE);
 	}
-	return transit + vertical;
+	return climb + transit + vertical;
 }
 
 static void _landingTargets(const Selection * selection, const Station * station, Vec2 * targets, double * targetZ) {
