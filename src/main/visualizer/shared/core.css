@@ -74,6 +74,7 @@ button.mm-step:hover { background: var(--soft); }
 .mm-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .mm-key { display: inline-block; width: 18px; height: 12px; flex: none; }
 .mm-key-zone { border: 1.5px solid var(--zone); background: color-mix(in srgb, var(--zone) 10%, transparent); }
+.mm-key-swath { border-radius: 6px; background: color-mix(in srgb, var(--muted) 22%, transparent); }
 .mm-key-ref { border: 1.5px dashed var(--zone); }
 .mm-key-excluded { border: 1.5px solid var(--excluded); background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--excluded) 55%, transparent) 0 1.5px, transparent 1.5px 5px); }
 .mm-key-station { width: 10px; height: 10px; background: var(--map-ink); transform: rotate(45deg); margin: 0 4px; }

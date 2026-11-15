@@ -208,8 +208,12 @@ const Murmur = (() => {
 		}
 	}
 
-	/** Play button, scrubber, clock and speed selector, bound to a player. */
-	function transport(player) {
+	/**
+	 * Play button, scrubber, clock and speed selector, bound to a player.
+	 * Several transports can share a player; only the one created with
+	 * keys = true answers to the space bar.
+	 */
+	function transport(player, { keys = true } = {}) {
 		const play = h("button", { class: "mm-play", type: "button", "aria-label": "Reproducir" }, "▶");
 		const range = h("input", { class: "mm-range", type: "range", min: player.t0, max: player.t1, step: "0.5", value: player.t0, "aria-label": "Instante de la misión" });
 		const time = h("output", { class: "mm-clock" });
@@ -217,14 +221,15 @@ const Murmur = (() => {
 			[1, 5, 20, 60].map((r) => h("option", { value: r, selected: r === player.rate }, `${r}×`)));
 		play.addEventListener("click", () => player.toggle());
 		range.addEventListener("input", () => player.seek(Number(range.value)));
-		rate.addEventListener("change", () => { player.rate = Number(rate.value); });
+		rate.addEventListener("change", () => { player.rate = Number(rate.value); player.emit(); });
 		player.on((t) => {
 			play.textContent = player.playing ? "❚❚" : "▶";
 			play.setAttribute("aria-label", player.playing ? "Pausar" : "Reproducir");
 			range.value = t;
+			rate.value = player.rate;
 			time.textContent = `${clock(t)}  (t = ${num(t, 0)} s)`;
 		});
-		document.addEventListener("keydown", (event) => {
+		if (keys) document.addEventListener("keydown", (event) => {
 			if (event.code === "Space" && !/^(INPUT|SELECT|BUTTON|TEXTAREA)$/.test(event.target.tagName)) {
 				event.preventDefault();
 				player.toggle();
@@ -244,6 +249,11 @@ const Murmur = (() => {
 	 *  - a selected aircraft always shows its whole route, with arrows that
 	 *    indicate the direction of travel (solid = already flown, dashed =
 	 *    still ahead), while the others are dimmed.
+	 * The "swath" option paints the ground already seen by each sensor: the
+	 * disk of radius altitude * tan(fov / 2) swept along the route flown so
+	 * far, the same geometry the compiler uses to compute zone coverage. The
+	 * ground keeps the color of the last aircraft that flew over it, and the
+	 * stretch of the last "tail" seconds is stronger and fades out.
 	 * Colors come from CSS custom properties, so each view themes the same map.
 	 */
 	class MapView {
@@ -251,7 +261,7 @@ const Murmur = (() => {
 			this.svg = clear(svg);
 			this.model = model;
 			// "only" restricts the map to a single aircraft (used for small multiples).
-			this.options = { route: "tail", tail: 90, footprint: false, labels: true, selected: null, only: null, onSelect: null, ...options };
+			this.options = { route: "tail", tail: 90, footprint: false, swath: true, labels: true, selected: null, only: null, onSelect: null, ...options };
 			const b = this.bounds = this._bounds();
 			const w = b.maxX - b.minX;
 			const hgt = b.maxY - b.minY;
@@ -261,6 +271,9 @@ const Murmur = (() => {
 			svg.setAttribute("aria-label", "Mapa de la misión: zonas, estaciones y aeronaves");
 
 			const defs = s("defs", {}, svg);
+			// Everything painted on the ground is clipped to the map frame.
+			const clipId = `mm-clip-${++MapView.count}`;
+			s("rect", { x: b.minX, y: -b.maxY, width: w, height: hgt }, s("clipPath", { id: clipId }, defs));
 			const hatch = s("pattern", { id: "mm-hatch", width: 7 * u, height: 7 * u, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
 			s("line", { x1: 0, y1: 0, x2: 0, y2: 7 * u, style: "stroke: var(--excluded)", "stroke-opacity": 0.55, "stroke-width": 1.4 * u }, hatch);
 
@@ -297,6 +310,13 @@ const Murmur = (() => {
 				s("text", { x: x + 11 * u, y: -y + 16 * u, "font-size": 11 * u, style: `fill: var(--map-ink); ${halo}` }, zones, station.name);
 			}
 
+			// Swath: a single translucent layer in which every stretch is painted
+			// opaque and in chronological order, so overlapping passes do not get
+			// darker and the ground keeps the color of the last one. On top, the
+			// recent stretch of each aircraft, fading out with its age.
+			const ground = { fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round", "clip-path": `url(#${clipId})` };
+			const swathLayer = s("g", { ...ground, opacity: MapView.SWATH_OPACITY }, svg);
+			const recentLayer = s("g", ground, svg);
 			this.footLayer = s("g", {}, svg);
 			const routes = s("g", { fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
 			const markers = s("g", {}, svg);
@@ -339,10 +359,98 @@ const Murmur = (() => {
 				s("title", {}, g, `${a.id} · flota ${a.fleet}`);
 				const select = () => this.options.onSelect && this.options.onSelect(a.id);
 				g.addEventListener("click", select);
+				let swath = null;
+				const halfFov = a.spec && a.spec.payload ? Math.tan(a.spec.payload.fov / 2) : 0;
+				if (halfFov > 0) {
+					const widths = track.z.map((z) => 2 * Math.max(z, 0) * halfFov);
+					swath = {
+						color, widths, halfFov, chunks: this._swathChunks(track, widths), shown: null,
+						bands: MapView.FADE.map((opacity) => s("polyline", { style: `stroke: ${color}`, "stroke-opacity": opacity, "stroke-linecap": "butt" }, recentLayer)),
+					};
+				}
 				return {
-					aircraft: a, group, g, ahead, done, tails, arrows, ends, nose, dot, text,
+					aircraft: a, group, g, ahead, done, tails, arrows, ends, nose, dot, text, swath,
 					foot: s("circle", { style: `fill: ${color}; stroke: ${color}`, "fill-opacity": 0.07, "stroke-opacity": 0.3, "stroke-width": u }, this.footLayer),
 				};
+			});
+
+			const chunks = [];
+			for (const item of this.items) {
+				if (item.swath) item.swath.chunks.forEach((chunk) => chunks.push([chunk, item.swath.color]));
+			}
+			chunks.sort(([a], [b]) => a.t - b.t);
+			for (const [chunk, color] of chunks) chunk.el = s("polyline", { style: `stroke: ${color}`, "stroke-width": chunk.width }, swathLayer);
+		}
+
+		/**
+		 * Splits a track into short stretches flown at about the same altitude,
+		 * each one drawn as a polyline as wide as the sensor footprint. They are
+		 * short so that, sorted by time, the last pass over a spot is on top.
+		 * Consecutive stretches share their end point to stay continuous.
+		 */
+		_swathChunks(track, widths) {
+			const quantum = Math.max(this.unit, Math.max(...widths) / 24);
+			const chunks = [];
+			let chunk = null;
+			for (let k = 0; k < track.t.length; ++k) {
+				if (track.phase[k] === "ground" || widths[k] < this.unit) { chunk = null; continue; }
+				const width = Math.max(1, Math.round(widths[k] / quantum)) * quantum;
+				if (chunk === null || chunk.width !== width || track.t[k] - chunk.t >= MapView.CHUNK) {
+					const from = chunk === null ? k : k - 1;
+					chunk = { from, to: k, t: track.t[from], width, state: null };
+					chunks.push(chunk);
+				}
+				chunk.to = k;
+			}
+			return chunks;
+		}
+
+		/** Paints the swath of an aircraft up to instant t (frame "index", then point "here"). */
+		_paintSwath(swath, track, t, index, here, visible, dimmed) {
+			const look = `${visible}/${dimmed}`;
+			for (const chunk of swath.chunks) {
+				const state = !visible || index < chunk.from ? "none" : chunk.to <= index ? "full" : "partial";
+				if (state === chunk.state && state !== "partial" && look === swath.shown) continue;
+				chunk.state = state;
+				const points = [];
+				if (state !== "none") {
+					for (let k = chunk.from; k <= Math.min(chunk.to, index); ++k) points.push(`${track.x[k]},${-track.y[k]}`);
+					if (state === "partial") points.push(here);
+					if (points.length === 1) points.push(points[0]);
+				}
+				chunk.el.setAttribute("points", points.join(" "));
+				chunk.el.setAttribute("stroke-opacity", dimmed ? 0.3 : 1);
+			}
+			swath.shown = look;
+
+			// Recent stretch, in bands that fade out with their age. Bands are
+			// contiguous (each one starts where the next one ends) and have flat
+			// ends, so they never overlap and no darker spots appear.
+			const span = this.options.tail / swath.bands.length;
+			const first = track.t[0];
+			const last = Math.min(t, track.t[track.t.length - 1]);
+			swath.bands.forEach((band, k) => {
+				const to = Math.min(t - k * span, last);
+				const from = Math.max(to - span, first);
+				const points = [];
+				let width = 0;
+				const add = (p) => {
+					if (p.phase === "ground") return;
+					const point = `${p.x},${-p.y}`;
+					if (point !== points[points.length - 1]) points.push(point);
+				};
+				if (visible && !dimmed && index >= 0 && from < to) {
+					const start = sample(track, from);
+					add(start);
+					for (let j = start.index + 1; j <= index && track.t[j] < to; ++j) {
+						add({ x: track.x[j], y: track.y[j], phase: track.phase[j] });
+						width = Math.max(width, swath.widths[j]);
+					}
+					add(sample(track, to));
+					width = Math.max(width, 2 * Math.max(start.z, 0) * swath.halfFov);
+				}
+				band.setAttribute("points", points.length > 1 && width >= this.unit ? points.join(" ") : "");
+				band.setAttribute("stroke-width", width);
 			});
 		}
 
@@ -351,7 +459,15 @@ const Murmur = (() => {
 			const add = (x, y) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); };
 			this.model.zones.forEach((z) => z.vertices.forEach(([x, y]) => add(x, y)));
 			this.model.stations.forEach((st) => add(st.position[0], st.position[1]));
-			this.model.deployed.forEach((a) => a.track.x.forEach((x, k) => add(x, a.track.y[k])));
+			this.model.deployed.forEach((a) => {
+				// The ground seen by the sensor also has to fit in the map.
+				const halfFov = a.spec && a.spec.payload ? Math.tan(a.spec.payload.fov / 2) : 0;
+				a.track.x.forEach((x, k) => {
+					const r = a.track.phase[k] === "ground" ? 0 : Math.max(a.track.z[k], 0) * halfFov;
+					add(x - r, a.track.y[k] - r);
+					add(x + r, a.track.y[k] + r);
+				});
+			});
 			if (!isFinite(minX)) { minX = minY = -100; maxX = maxY = 100; }
 			const pad = Math.max(maxX - minX, maxY - minY, 20) * 0.09;
 			return { minX: minX - pad, minY: minY - pad, maxX: maxX + pad, maxY: maxY + pad };
@@ -360,7 +476,7 @@ const Murmur = (() => {
 		/** Moves every aircraft to its position at instant t. */
 		update(t) {
 			const u = this.unit;
-			const { route, tail, selected, labels, footprint } = this.options;
+			const { route, tail, selected, labels, footprint, swath } = this.options;
 			const placed = [];	// Labels already shown, to skip the ones that would overlap.
 			const order = [...this.items].sort((a, b) => (b.aircraft.id === selected) - (a.aircraft.id === selected));
 			for (const item of order) {
@@ -369,16 +485,18 @@ const Murmur = (() => {
 				const state = sample(track, Math.min(t, end));
 				const hidden = this.options.only !== null && item.aircraft.id !== this.options.only;
 				item.group.setAttribute("display", hidden ? "none" : "");
+				const isSelected = item.aircraft.id === selected;
+				const dimmed = selected !== null && !isSelected;
 				if (hidden) {
 					item.g.setAttribute("display", "none");
 					item.foot.setAttribute("display", "none");
+					if (item.swath) this._paintSwath(item.swath, track, t, -1, null, false, dimmed);
 					continue;
 				}
-				const isSelected = item.aircraft.id === selected;
-				const dimmed = selected !== null && !isSelected;
 				item.group.setAttribute("opacity", dimmed ? 0.22 : 1);
 				item.g.setAttribute("opacity", dimmed ? 0.35 : 1);
 				if (!state) {
+					if (item.swath) this._paintSwath(item.swath, track, t, -1, null, false, dimmed);
 					item.g.setAttribute("display", "none");
 					item.foot.setAttribute("display", "none");
 					item.done.setAttribute("points", "");
@@ -416,6 +534,8 @@ const Murmur = (() => {
 				item.foot.setAttribute("cy", -state.y);
 				item.foot.setAttribute("r", radius);
 
+				if (item.swath) this._paintSwath(item.swath, track, t, state.index, `${state.x},${-state.y}`, swath, dimmed);
+
 				const whole = isSelected || route === "full";
 				item.ahead.setAttribute("display", whole ? "" : "none");
 				item.arrows.setAttribute("display", isSelected ? "" : "none");
@@ -447,6 +567,11 @@ const Murmur = (() => {
 			}
 		}
 	}
+
+	MapView.count = 0;
+	MapView.CHUNK = 8;						// [s] Length of each swath stretch.
+	MapView.SWATH_OPACITY = 0.16;			// Ground already seen.
+	MapView.FADE = [0.32, 0.27, 0.22, 0.18, 0.14, 0.1, 0.06, 0.03];	// Extra opacity of the recent stretch, newest first.
 
 	function niceStep(raw) {
 		const power = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-9))));

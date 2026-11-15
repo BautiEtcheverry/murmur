@@ -27,6 +27,23 @@ main { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap:
 .card .sub { margin: 0 0 8px; color: var(--muted); font-size: 12.5px; }
 .left { position: sticky; top: 12px; display: grid; gap: 16px; }
 #map { width: 100%; max-height: 52vh; display: block; }
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.fullscreen-button { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink); padding: 3px 10px; border: 1px solid var(--axis); border-radius: 6px; background: var(--panel); cursor: pointer; white-space: nowrap; }
+.fullscreen-button:hover { background: var(--soft); }
+.fullscreen-button svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.map-transport { display: none; }
+
+/* Full screen map: the card covers the window (and the screen, when the
+   browser allows it), with its own play controls below the map. */
+body.map-full { overflow: hidden; }
+/* The sticky column creates its own stacking context, which would keep the
+   map under the charts of the other column: release it while in full screen. */
+body.map-full .left { position: static; }
+.map-card.is-full { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; gap: 8px; padding: 16px 24px; border: 0; border-radius: 0; overflow: auto; }
+.map-card.is-full .sub { display: none; }
+.map-card.is-full #map { flex: 1 1 0; min-height: 0; max-height: none; height: auto; }
+.map-card.is-full .map-transport { display: block; padding-top: 4px; }
+.map-card.is-full .mm-legend, .map-card.is-full .toggles { margin-top: 0; }
 .toggles { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
 .right { display: grid; gap: 16px; }
 .mm-legend { margin: 8px 0 0; }
@@ -49,6 +66,10 @@ tr.pick:hover, tr[aria-selected="true"] { background: var(--soft); }
 .route-note button { font: inherit; font-size: 12.5px; margin-left: 4px; padding: 1px 8px; border: 1px solid var(--axis); border-radius: 6px; background: var(--panel); cursor: pointer; }
 .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
 .scroll { overflow-x: auto; }
+.pager { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 10px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pager button { font: inherit; color: var(--ink); padding: 3px 10px; border: 1px solid var(--axis); border-radius: 6px; background: var(--panel); cursor: pointer; }
+.pager button:hover:not(:disabled) { background: var(--soft); }
+.pager button:disabled { color: var(--faint); border-color: var(--line); cursor: default; }
 
 .empty { max-width: 600px; margin: 14vh auto; padding: 32px 36px; background: var(--panel); border: 1px dashed var(--axis); border-radius: 8px; }
 .empty h1 { margin: 0 0 8px; font-size: 26px; font-weight: 600; }
@@ -83,13 +104,21 @@ tr.pick:hover, tr[aria-selected="true"] { background: var(--soft); }
 	<section class="facts" id="facts" aria-label="Indicadores de la misión"></section>
 	<main>
 		<div class="left">
-			<section class="card">
-				<h2>Mapa de la misión</h2>
-				<p class="sub">Vista desde arriba, en metros. Cada aeronave arrastra la estela de sus últimos 45 segundos. Hacé clic en una para ver su recorrido completo.</p>
+			<section class="card map-card" id="map-card">
+				<div class="card-head">
+					<h2>Mapa de la misión</h2>
+					<button type="button" class="fullscreen-button" id="fullscreen" hidden>
+						<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+						<span>Pantalla completa</span>
+					</button>
+				</div>
+				<p class="sub">Vista desde arriba, en metros. Cada aeronave arrastra la estela de sus últimos 45 segundos, y el área sombreada es el terreno que su sensor ya vio. Hacé clic en una para ver su recorrido completo.</p>
 				<p class="route-note" id="route-note" hidden></p>
 				<svg id="map"></svg>
+				<div class="map-transport" id="map-transport"></div>
 				<div class="mm-legend" id="legend"></div>
 				<div class="toggles">
+					<label><input type="checkbox" id="opt-swath" checked> Área vista por el sensor</label>
 					<label><input type="checkbox" id="opt-foot"> Huella del sensor</label>
 					<label><input type="checkbox" id="opt-labels" checked> Identificadores</label>
 				</div>
@@ -125,6 +154,11 @@ tr.pick:hover, tr[aria-selected="true"] { background: var(--soft); }
 					<thead><tr><th scope="col">Aeronave</th><th scope="col">Flota</th><th scope="col">Fase</th><th scope="col" class="n">Altitud</th><th scope="col" class="n">Velocidad</th><th scope="col" class="n">Batería</th></tr></thead>
 					<tbody id="state"></tbody>
 				</table></div>
+				<nav class="pager" id="state-pager" aria-label="Páginas de la tabla" hidden>
+					<button type="button" id="state-prev">Anterior</button>
+					<span id="state-range" aria-live="polite"></span>
+					<button type="button" id="state-next">Siguiente</button>
+				</nav>
 			</section>
 		</div>
 	</main>
@@ -140,6 +174,7 @@ const $ = (id) => document.getElementById(id);
 
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const charts = [];
+const PAGE_SIZE = 16;	// Rows of the state table per page.
 
 /**
  * Line chart over mission time, drawn with Chart.js. Every series shares the
@@ -261,7 +296,7 @@ function start(model) {
 	}
 
 	const player = new Murmur.Player(model.t0, model.t1);
-	const map = new Murmur.MapView($("map"), model, { route: "tail", tail: 45, footprint: $("opt-foot").checked, labels: $("opt-labels").checked, onSelect: (id) => select(id) });
+	const map = new Murmur.MapView($("map"), model, { route: "tail", tail: 45, footprint: $("opt-foot").checked, swath: $("opt-swath").checked, labels: $("opt-labels").checked, onSelect: (id) => select(id) });
 	const legend = Murmur.clear($("legend"));
 	const seriesLegend = Murmur.clear($("series-legend"));
 	model.fleets.forEach((fleet, k) => {
@@ -270,11 +305,13 @@ function start(model) {
 		seriesLegend.appendChild(h("span", {}, h("i", { style: `border-color: ${color}` }), `Flota ${fleet.name} (${fleet.aircraft.length} ${fleet.aircraft.length === 1 ? "aeronave" : "aeronaves"})`));
 	});
 	legend.append(
+		h("span", {}, h("i", { class: "mm-key mm-key-swath" }), "Área vista por el sensor"),
 		h("span", {}, h("i", { class: "mm-key mm-key-zone" }), "Zona barrida"),
 		h("span", {}, h("i", { class: "mm-key mm-key-ref" }), "Zona de referencia"),
 		h("span", {}, h("i", { class: "mm-key mm-key-excluded" }), "Zona excluida"),
 		h("span", {}, h("i", { class: "mm-key mm-key-station" }), "Estación"));
 	Murmur.clear($("transport")).appendChild(Murmur.transport(player));
+	Murmur.clear($("map-transport")).appendChild(Murmur.transport(player, { keys: false }));
 	Murmur.clear($("timeline")).appendChild(Murmur.maneuverPlan(model, player));
 
 	for (const chart of charts.splice(0)) chart.destroy();
@@ -312,6 +349,9 @@ function start(model) {
 	function select(id) {
 		map.options.selected = map.options.selected === id ? null : id;
 		const selected = map.options.selected;
+		// The table shows the page of the chosen aircraft.
+		const index = model.aircraft.findIndex((a) => a.id === selected);
+		if (index >= 0) page = Math.floor(index / PAGE_SIZE);
 		const note = Murmur.clear($("route-note"));
 		note.hidden = selected === null;
 		if (selected !== null) {
@@ -322,12 +362,23 @@ function start(model) {
 	}
 	$("route-note").hidden = true;
 
+	// The state table is paginated, so that large swarms stay readable.
 	const stateBody = $("state");
+	const pages = Math.max(1, Math.ceil(model.aircraft.length / PAGE_SIZE));
+	let page = 0;
+	$("state-pager").hidden = pages === 1;
+	$("state-prev").onclick = () => { page = Math.max(0, page - 1); player.emit(); };
+	$("state-next").onclick = () => { page = Math.min(pages - 1, page + 1); player.emit(); };
 	player.on((t) => {
 		map.update(t);
 		$("state-title").textContent = `Estado a los ${clock(t)} (t = ${num(t)} s)`;
 		Murmur.clear(stateBody);
-		for (const a of model.aircraft) {
+		const first = page * PAGE_SIZE;
+		const shown = model.aircraft.slice(first, first + PAGE_SIZE);
+		$("state-range").textContent = `Aeronaves ${first + 1}–${first + shown.length} de ${model.aircraft.length} · página ${page + 1} de ${pages}`;
+		$("state-prev").disabled = page === 0;
+		$("state-next").disabled = page === pages - 1;
+		for (const a of shown) {
 			const st = a.track ? Murmur.sample(a.track, t) : null;
 			stateBody.appendChild(h("tr", { class: a.track ? "pick" : null, "aria-selected": a.id === map.options.selected ? "true" : null, onclick: a.track ? () => select(a.id) : null },
 				h("td", {}, h("i", { class: "swatch", style: `background: var(--fleet-${a.slot})` }), a.id),
@@ -338,6 +389,7 @@ function start(model) {
 				h("td", { class: "n" }, st ? percent(st.battery, 1) : "—")));
 		}
 	});
+	$("opt-swath").onchange = (event) => { map.options.swath = event.target.checked; map.update(player.t); };
 	$("opt-foot").onchange = (event) => { map.options.footprint = event.target.checked; map.update(player.t); };
 	$("opt-labels").onchange = (event) => { map.options.labels = event.target.checked; map.update(player.t); };
 	player.seek(model.t0);
@@ -346,6 +398,40 @@ function start(model) {
 function fail(message) {
 	$("error").hidden = false;
 	$("error").textContent = message;
+}
+
+// Full screen map (Esc, or the same button, goes back). The card covers the
+// window with CSS; when the browser allows it, it also takes the whole screen.
+{
+	const card = $("map-card");
+	const button = $("fullscreen");
+	const native = () => document.fullscreenElement || document.webkitFullscreenElement;
+	const set = (on) => {
+		card.classList.toggle("is-full", on);
+		document.body.classList.toggle("map-full", on);
+		button.querySelector("span").textContent = on ? "Salir de pantalla completa" : "Pantalla completa";
+		button.setAttribute("aria-pressed", on ? "true" : "false");
+		if (on) {
+			const request = card.requestFullscreen || card.webkitRequestFullscreen;
+			if (request) Promise.resolve(request.call(card)).catch(() => {});
+		}
+		else if (native()) {
+			const exit = document.exitFullscreen || document.webkitExitFullscreen;
+			Promise.resolve(exit.call(document)).catch(() => {});
+		}
+	};
+	button.hidden = false;
+	button.onclick = (event) => {
+		set(!card.classList.contains("is-full"));
+		if (event.detail > 0) button.blur();	// Mouse click: the space bar keeps playing.
+	};
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && card.classList.contains("is-full")) set(false);
+	});
+	// Leaving the browser's full screen (with Esc) also leaves the full screen map.
+	const left = () => { if (!native() && card.classList.contains("is-full")) set(false); };
+	document.addEventListener("fullscreenchange", left);
+	document.addEventListener("webkitfullscreenchange", left);
 }
 
 Murmur.loader({ input: $("file"), onLog: start, onError: fail });
